@@ -1,0 +1,56 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Italiana', serif;
+
+  --color-hm-primary: #4A6FA5;
+  --color-hm-primary-trans: rgba(74, 111, 165, 0.26);
+  --color-hm-primary-hover: rgba(74, 111, 165, 0.45);
+  --color-hm-text: #CFF2FF;
+  --color-hm-text-strong: #FFFFFF;
+  --color-hm-text-muted: #B6C4D3;
+  --color-hm-text-subtle: #8CAAB5;
+  --color-hm-surface: #1A3551;
+  --color-hm-surface-dim: rgba(26, 53, 81, 0.72);
+  --color-hm-surface-card: rgba(26, 53, 81, 0.5);
+  --color-hm-bg-deep: #071824;
+  --color-hm-bg-indigo: #151447;
+  --color-hm-success: #25ED82;
+  --color-hm-danger: #FF6D6F;
+  --color-hm-outline: rgba(207, 242, 255, 0.3);
+
+  --shadow-hm-card: 0px 2px 2.8px 0px rgba(0, 0, 0, 0.25);
+  --shadow-hm-text: 0px 2px 1.6px 0px rgba(0, 0, 0, 0.29);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: radial-gradient(circle at 6% 19%, rgba(38, 68, 86, 1) 0%, rgba(19, 17, 75, 1) 38%, rgba(26, 29, 62, 1) 79%, rgba(39, 46, 90, 1) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar matching Figma frame 78:26 and 82:72 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(13, 27, 43, 0.5);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4A6FA5;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6088c4;
+}

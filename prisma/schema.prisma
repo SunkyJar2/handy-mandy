@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProductKind {
+  DEVICE
+  ADDON
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PENDING_ASSIGNMENT
+  ASSIGNED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+enum OrderLineType {
+  DEVICE
+  INSTALLATION
+  ADDON
+}
+
+enum TechnicianAvailability {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+model User {
+  id           String     @id @default(cuid())
+  fullName     String     @db.VarChar(80)
+  email        String     @unique @db.VarChar(254)
+  phone        String?    @db.VarChar(20)
+  passwordHash String
+  role         Role       @default(CUSTOMER)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  addresses    Address[]
+  cartItems    CartItem[]
+  orders       Order[]
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  province    String   @db.VarChar(100)
+  city        String   @db.VarChar(100)
+  district    String   @db.VarChar(100)
+  addressLine String   @db.VarChar(200)
+  postalCode  String   @db.Char(5)
+  notes       String?  @db.VarChar(200)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@index([userId])
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  name      String    @db.VarChar(50)
+  sortOrder Int       @default(0)
+  products  Product[]
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  name         String        @db.VarChar(80)
+  description  String        @db.VarChar(500)
+  priceIdr     Int
+  imageUrl     String
+  kind         ProductKind   @default(DEVICE)
+  status       ProductStatus @default(ACTIVE)
+  isFeatured   Boolean       @default(false)
+  featuredRank Int?
+  categoryId   String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  category     Category      @relation(fields: [categoryId], references: [id])
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+
+  @@index([categoryId, status])
+  @@index([isFeatured, status])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  addedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+}
+
+model Order {
+  id                  String      @id @default(cuid())
+  orderNumber         String      @unique
+  userId              String
+  addressId           String?
+  addressSnapshot     Json
+  technicianId        String?
+  status              OrderStatus @default(PENDING_PAYMENT)
+  includeInstallation Boolean     @default(false)
+  preferredDate       DateTime?   @db.Date
+  specialInstructions String?     @db.VarChar(500)
+  devicesSubtotalIdr  Int
+  installationFeeIdr  Int         @default(0)
+  addOnsIdr           Int         @default(0)
+  totalIdr            Int
+  estimatedFinishDate DateTime?   @db.Date
+  idempotencyKey      String?     @unique
+  createdAt           DateTime    @default(now())
+  paidAt              DateTime?
+  user                User        @relation(fields: [userId], references: [id])
+  address             Address?    @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  technician          Technician? @relation(fields: [technicianId], references: [id])
+  items               OrderItem[]
+  payments            Payment[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id            String        @id @default(cuid())
+  orderId       String
+  lineType      OrderLineType
+  productId     String?
+  nameSnapshot  String
+  imageSnapshot String?
+  unitPriceIdr  Int
+  quantity      Int
+  lineTotalIdr  Int
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product?      @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  provider    String
+  providerRef String?       @unique
+  status      PaymentStatus @default(PENDING)
+  amountIdr   Int
+  rawPayload  Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  order       Order         @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+}
+
+model Technician {
+  id           String                 @id @default(cuid())
+  fullName     String                 @db.VarChar(80)
+  avatarUrl    String?
+  city         String                 @db.VarChar(100)
+  ratingAvg    Decimal                @db.Decimal(2, 1)
+  ratingCount  Int                    @default(0)
+  highlight    String?                @db.VarChar(160)
+  availability TechnicianAvailability @default(AVAILABLE)
+  orders       Order[]
+  areas        TechnicianServiceArea[]
+
+  @@index([city, availability])
+}
+
+model TechnicianServiceArea {
+  id           String     @id @default(cuid())
+  technicianId String
+  area         String     @db.VarChar(100)
+  technician   Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([technicianId, area])
+}

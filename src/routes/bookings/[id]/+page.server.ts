@@ -1,0 +1,71 @@
+import { error, redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+import { db } from '$lib/server/db';
+import type { OrderDetailDto } from '$lib/shared/types';
+
+export const load: PageServerLoad = async ({ params, locals }) => {
+  if (!locals.user) {
+    throw redirect(303, `/login?next=/bookings/${params.id}`);
+  }
+
+  const order = await db.order.findUnique({
+    where: { id: params.id },
+    include: {
+      technician: {
+        include: { areas: true }
+      },
+      items: true
+    }
+  });
+
+  if (!order || order.userId !== locals.user.id) {
+    throw error(404, 'Booking not found');
+  }
+
+  const addr = (order.addressSnapshot as any) || {};
+
+  const orderDetail: OrderDetailDto = {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    createdAt: order.createdAt.toISOString(),
+    itemNames: order.items.filter((i) => i.lineType === 'DEVICE').map((i) => i.nameSnapshot),
+    totalIdr: order.totalIdr,
+    technician: order.technician
+      ? {
+          id: order.technician.id,
+          fullName: order.technician.fullName,
+          avatarUrl: order.technician.avatarUrl,
+          ratingAvg: Number(order.technician.ratingAvg),
+          city: order.technician.city
+        }
+      : null,
+    address: {
+      province: addr.province || '',
+      city: addr.city || '',
+      district: addr.district || '',
+      addressLine: addr.addressLine || '',
+      postalCode: addr.postalCode || '',
+      notes: addr.notes || null
+    },
+    includeInstallation: order.includeInstallation,
+    preferredDate: order.preferredDate ? order.preferredDate.toISOString().split('T')[0] : null,
+    specialInstructions: order.specialInstructions,
+    estimatedFinishDate: order.estimatedFinishDate ? order.estimatedFinishDate.toISOString().split('T')[0] : null,
+    lines: order.items.map((item) => ({
+      lineType: item.lineType,
+      name: item.nameSnapshot,
+      imageUrl: item.imageSnapshot,
+      unitPriceIdr: item.unitPriceIdr,
+      quantity: item.quantity,
+      lineTotalIdr: item.lineTotalIdr
+    })),
+    devicesSubtotalIdr: order.devicesSubtotalIdr,
+    installationFeeIdr: order.installationFeeIdr,
+    addOnsIdr: order.addOnsIdr
+  };
+
+  return {
+    order: orderDetail
+  };
+};

@@ -12,27 +12,25 @@ export const load: PageServerLoad = async ({ locals }) => {
     };
   }
 
-  const cartRecords = await db.cartItem.findMany({
-    where: { userId: locals.user.id },
-    include: {
-      product: {
-        include: { category: true }
-      }
-    },
-    orderBy: { addedAt: 'desc' }
-  });
+  const cartRecords = await db.orm.public.CartItem
+    .where({ userId: locals.user.id })
+    .include('product', (p) => p.include('category'))
+    .orderBy((c) => c.addedAt.desc())
+    .all();
 
   let subtotalIdr = 0;
   let itemCount = 0;
 
-  const items: CartItemDto[] = cartRecords.map((item) => {
+  const items: CartItemDto[] = [];
+  for (const item of cartRecords) {
+    if (!item.product) continue;
     const isAvailable = item.product.status === 'ACTIVE';
     if (isAvailable) {
       subtotalIdr += item.product.priceIdr * item.quantity;
       itemCount += item.quantity;
     }
 
-    return {
+    items.push({
       id: item.id,
       productId: item.productId,
       quantity: item.quantity,
@@ -44,19 +42,19 @@ export const load: PageServerLoad = async ({ locals }) => {
         description: item.product.description,
         priceIdr: item.product.priceIdr,
         imageUrl: item.product.imageUrl,
-        kind: item.product.kind,
-        status: item.product.status,
+        kind: item.product.kind as any,
+        status: item.product.status as any,
         isFeatured: item.product.isFeatured,
         featuredRank: item.product.featuredRank,
         category: {
-          id: item.product.category.id,
-          slug: item.product.category.slug,
-          name: item.product.category.name,
-          sortOrder: item.product.category.sortOrder
+          id: item.product.category?.id ?? '',
+          slug: item.product.category?.slug ?? '',
+          name: item.product.category?.name ?? '',
+          sortOrder: item.product.category?.sortOrder ?? 0
         }
       }
-    };
-  });
+    });
+  }
 
   return {
     items,
@@ -78,14 +76,10 @@ export const actions: Actions = {
       return fail(400, { message: 'Item ID missing' });
     }
 
-    const item = await db.cartItem.findUnique({
-      where: { id: itemId }
-    });
+    const item = await db.orm.public.CartItem.where({ id: itemId }).first();
 
     if (item && item.userId === locals.user.id) {
-      await db.cartItem.delete({
-        where: { id: itemId }
-      });
+      await db.orm.public.CartItem.where({ id: itemId }).delete();
     }
 
     return { success: true };

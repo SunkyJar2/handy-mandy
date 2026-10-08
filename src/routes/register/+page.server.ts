@@ -38,15 +38,15 @@ export const actions: Actions = {
     }
 
     // Check unique email
-    const existing = await db.user.findUnique({
-      where: { email: parseResult.data.email }
-    });
+    const existing = await db.orm.public.User.where({
+      email: parseResult.data.email
+    }).first();
 
     if (existing) {
       return fail(409, {
         fieldErrors: {
           email: 'This email is already registered.'
-        },
+        } as Record<string, string>,
         fullName,
         email,
         phone
@@ -55,14 +55,12 @@ export const actions: Actions = {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = await db.user.create({
-      data: {
-        fullName: parseResult.data.fullName,
-        email: parseResult.data.email,
-        phone: parseResult.data.phone || null,
-        passwordHash,
-        role: 'CUSTOMER'
-      }
+    const user = await db.orm.public.User.create({
+      fullName: parseResult.data.fullName,
+      email: parseResult.data.email,
+      phone: parseResult.data.phone || null,
+      passwordHash,
+      role: 'CUSTOMER'
     });
 
     const sessionId = await createSession(user.id);

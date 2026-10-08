@@ -8,25 +8,19 @@ export const load: PageServerLoad = async ({ locals }) => {
     throw redirect(303, '/login?next=/bookings');
   }
 
-  const orders = await db.order.findMany({
-    where: {
-      userId: locals.user.id,
-      status: { not: 'PENDING_PAYMENT' } // Spec: exclude abandoned cart orders
-    },
-    include: {
-      technician: true,
-      items: {
-        where: { lineType: 'DEVICE' }
-      }
-    },
-    orderBy: { createdAt: 'desc' }
-  });
+  const orders = await db.orm.public.Order
+    .where({ userId: locals.user.id })
+    .where((o) => o.status.neq('PENDING_PAYMENT'))
+    .include('technician')
+    .include('items', (items) => items.where({ lineType: 'DEVICE' }))
+    .orderBy((o) => o.createdAt.desc())
+    .all();
 
   const mappedOrders: OrderSummaryDto[] = orders.map((o) => ({
     id: o.id,
     orderNumber: o.orderNumber,
-    status: o.status,
-    createdAt: o.createdAt.toISOString(),
+    status: o.status as any,
+    createdAt: o.createdAt ? new Date(o.createdAt.epochMilliseconds).toISOString() : '',
     itemNames: o.items.map((i) => i.nameSnapshot),
     totalIdr: o.totalIdr,
     technician: o.technician

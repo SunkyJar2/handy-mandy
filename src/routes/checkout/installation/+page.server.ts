@@ -14,13 +14,13 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
   }
 
   const [cartItems, address] = await Promise.all([
-    db.cartItem.findMany({
-      where: { userId: locals.user.id },
-      include: { product: true }
-    }),
-    db.address.findUnique({
-      where: { id: addressId }
-    })
+    db.orm.public.CartItem
+      .where({ userId: locals.user.id })
+      .include('product')
+      .all(),
+    db.orm.public.Address
+      .where({ id: addressId })
+      .first()
   ]);
 
   if (cartItems.length === 0) {
@@ -49,7 +49,18 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
   });
 
   return {
-    address,
+    address: {
+      id: address.id,
+      userId: address.userId,
+      province: address.province,
+      city: address.city,
+      district: address.district,
+      addressLine: address.addressLine,
+      postalCode: address.postalCode,
+      notes: address.notes,
+      isDefault: address.isDefault,
+      createdAt: address.createdAt ? new Date(address.createdAt.epochMilliseconds).toISOString() : ''
+    },
     cartItemsCount: cartItems.reduce((acc, ci) => acc + ci.quantity, 0),
     includeInstallation,
     includeHub,

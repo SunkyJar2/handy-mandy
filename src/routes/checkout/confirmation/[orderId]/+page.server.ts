@@ -7,12 +7,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     throw error(401, 'Please sign in');
   }
 
-  const order = await db.order.findUnique({
-    where: { id: params.orderId },
-    include: {
-      technician: true
-    }
-  });
+  const order = await db.orm.public.Order
+    .where({ id: params.orderId })
+    .include('technician')
+    .first();
 
   if (!order || order.userId !== locals.user.id) {
     throw error(404, 'Order not found');

@@ -5,9 +5,13 @@ export const load: LayoutServerLoad = async ({ locals }) => {
   let cartCount = 0;
 
   if (locals.user) {
-    cartCount = await db.cartItem.count({
-      where: { userId: locals.user.id }
-    });
+    try {
+      const agg = await db.orm.public.CartItem.where({ userId: locals.user.id })
+        .aggregate((a) => ({ count: a.count() }));
+      cartCount = Number(agg.count ?? 0);
+    } catch {
+      cartCount = 0;
+    }
   }
 
   return {

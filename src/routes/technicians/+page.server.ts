@@ -12,9 +12,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   let targetOrder = null;
 
   if (orderId) {
-    targetOrder = await db.order.findUnique({
-      where: { id: orderId }
-    });
+    targetOrder = await db.orm.public.Order.where({ id: orderId }).first();
     if (!targetOrder || targetOrder.userId !== locals.user.id) {
       targetOrder = null;
     }
@@ -22,20 +20,17 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
   // If no orderId in query, find latest PENDING_ASSIGNMENT order for user to enable convenient 1-click assignment
   if (!targetOrder) {
-    targetOrder = await db.order.findFirst({
-      where: {
-        userId: locals.user.id,
-        status: 'PENDING_ASSIGNMENT'
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    targetOrder = await db.orm.public.Order
+      .where({ userId: locals.user.id, status: 'PENDING_ASSIGNMENT' })
+      .orderBy((o) => o.createdAt.desc())
+      .first();
   }
 
-  const technicians = await db.technician.findMany({
-    where: { city: 'Surabaya' },
-    include: { areas: true },
-    orderBy: [{ availability: 'asc' }, { ratingAvg: 'desc' }]
-  });
+  const technicians = await db.orm.public.Technician
+    .where({ city: 'Surabaya' })
+    .include('areas')
+    .orderBy((t) => t.ratingAvg.desc())
+    .all();
 
   const mappedTechnicians: TechnicianDto[] = technicians.map((t) => ({
     id: t.id,
@@ -46,7 +41,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
     ratingCount: t.ratingCount,
     areas: t.areas.map((a) => a.area),
     highlight: t.highlight,
-    availability: t.availability
+    availability: t.availability as any
   }));
 
   return {
@@ -55,7 +50,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
       ? {
           id: targetOrder.id,
           orderNumber: targetOrder.orderNumber,
-          status: targetOrder.status
+          status: targetOrder.status as any
         }
       : null
   };
@@ -75,28 +70,21 @@ export const actions: Actions = {
       return fail(400, { message: 'Order and Technician IDs are required.' });
     }
 
-    const order = await db.order.findUnique({
-      where: { id: orderId }
-    });
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
 
     if (!order || order.userId !== locals.user.id) {
       return fail(404, { message: 'Booking not found.' });
     }
 
-    const technician = await db.technician.findUnique({
-      where: { id: technicianId }
-    });
+    const technician = await db.orm.public.Technician.where({ id: technicianId }).first();
 
     if (!technician || technician.availability !== 'AVAILABLE') {
       return fail(409, { message: 'This technician is unavailable.' });
     }
 
-    await db.order.update({
-      where: { id: orderId },
-      data: {
-        technicianId,
-        status: 'ASSIGNED'
-      }
+    await db.orm.public.Order.where({ id: orderId }).update({
+      technicianId,
+      status: 'ASSIGNED'
     });
 
     throw redirect(303, `/bookings/${orderId}`);

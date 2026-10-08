@@ -9,26 +9,22 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   const productId = params.id;
   const body = await request.json().catch(() => ({}));
 
-  const existing = await db.product.findUnique({
-    where: { id: productId }
-  });
+  const existing = await db.orm.public.Product.where({ id: productId }).first();
 
   if (!existing) {
     return json({ error: { code: 'NOT_FOUND', message: 'Product not found.' } }, { status: 404 });
   }
 
-  const updated = await db.product.update({
-    where: { id: productId },
-    data: {
-      ...(body.status ? { status: body.status } : {}),
-      ...(body.name ? { name: body.name } : {}),
-      ...(body.description ? { description: body.description } : {}),
-      ...(body.priceIdr ? { priceIdr: Number(body.priceIdr) } : {}),
-      ...(body.categoryId ? { categoryId: body.categoryId } : {}),
-      ...(body.imageUrl ? { imageUrl: body.imageUrl } : {}),
-      ...(typeof body.isFeatured === 'boolean' ? { isFeatured: body.isFeatured } : {})
-    }
-  });
+  const updateData: Record<string, any> = {};
+  if (body.status) updateData.status = body.status;
+  if (body.name) updateData.name = body.name;
+  if (body.description) updateData.description = body.description;
+  if (body.priceIdr) updateData.priceIdr = Number(body.priceIdr);
+  if (body.categoryId) updateData.categoryId = body.categoryId;
+  if (body.imageUrl) updateData.imageUrl = body.imageUrl;
+  if (typeof body.isFeatured === 'boolean') updateData.isFeatured = body.isFeatured;
+
+  const updated = await db.orm.public.Product.where({ id: productId }).update(updateData);
 
   return json({ success: true, product: updated });
 };

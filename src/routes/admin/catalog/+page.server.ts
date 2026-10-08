@@ -12,13 +12,13 @@ export const load: PageServerLoad = async ({ locals }) => {
   }
 
   const [products, categories] = await Promise.all([
-    db.product.findMany({
-      include: { category: true },
-      orderBy: { createdAt: 'desc' }
-    }),
-    db.category.findMany({
-      orderBy: { sortOrder: 'asc' }
-    })
+    db.orm.public.Product
+      .include('category')
+      .orderBy((p) => p.createdAt.desc())
+      .all(),
+    db.orm.public.Category
+      .orderBy((c) => c.sortOrder.asc())
+      .all()
   ]);
 
   const mappedProducts: AdminProductDto[] = products.map((p) => ({
@@ -28,11 +28,11 @@ export const load: PageServerLoad = async ({ locals }) => {
     description: p.description,
     priceIdr: p.priceIdr,
     imageUrl: p.imageUrl,
-    kind: p.kind,
-    status: p.status,
+    kind: p.kind as any,
+    status: p.status as any,
     isFeatured: p.isFeatured,
     featuredRank: p.featuredRank,
-    updatedAt: p.updatedAt.toISOString(),
+    updatedAt: p.updatedAt ? new Date(p.updatedAt.epochMilliseconds).toISOString() : '',
     category: {
       id: p.category.id,
       slug: p.category.slug,
@@ -70,9 +70,8 @@ export const actions: Actions = {
 
     const nextStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
-    await db.product.update({
-      where: { id: productId },
-      data: { status: nextStatus }
+    await db.orm.public.Product.where({ id: productId }).update({
+      status: nextStatus as any
     });
 
     return { success: true };

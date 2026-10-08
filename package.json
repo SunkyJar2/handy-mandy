@@ -5,11 +5,12 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "prisma generate && vite build",
+		"build": "prisma contract emit && vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
-		"postinstall": "prisma generate",
-		"db:push": "prisma db push",
+		"postinstall": "prisma contract emit",
+		"db:update": "prisma db update",
+		"db:push": "prisma db update",
 		"db:seed": "tsx prisma/seed.ts",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
@@ -20,6 +21,7 @@
 		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@tailwindcss/vite": "^4.3.0",
 		"@types/bcryptjs": "^2.4.6",
+		"prisma": "^8.0.0-rc.21",
 		"svelte": "^5.57.1",
 		"svelte-check": "^4.6.0",
 		"tailwindcss": "^4.3.0",
@@ -32,11 +34,11 @@
 		"#lib/*": "./src/lib/*"
 	},
 	"dependencies": {
-		"@prisma/client": "^6.19.3",
+		"@prisma/orm-postgres": "^8.0.0-rc.16",
 		"@sveltejs/adapter-vercel": "^7.0.0",
 		"bcryptjs": "^3.0.3",
 		"lucide-svelte": "^1.0.1",
-		"prisma": "^6.19.3",
+		"temporal-polyfill": "^1.0.5",
 		"zod": "^4.6.5"
 	}
 }

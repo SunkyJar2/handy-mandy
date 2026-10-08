@@ -15,13 +15,13 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
   }
 
   const [cartItems, address] = await Promise.all([
-    db.cartItem.findMany({
-      where: { userId: locals.user.id },
-      include: { product: true }
-    }),
-    db.address.findUnique({
-      where: { id: addressId }
-    })
+    db.orm.public.CartItem
+      .where({ userId: locals.user.id })
+      .include('product')
+      .all(),
+    db.orm.public.Address
+      .where({ id: addressId })
+      .first()
   ]);
 
   if (cartItems.length === 0) {
@@ -49,7 +49,18 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
   });
 
   return {
-    address,
+    address: {
+      id: address.id,
+      userId: address.userId,
+      province: address.province,
+      city: address.city,
+      district: address.district,
+      addressLine: address.addressLine,
+      postalCode: address.postalCode,
+      notes: address.notes,
+      isDefault: address.isDefault,
+      createdAt: address.createdAt ? new Date(address.createdAt.epochMilliseconds).toISOString() : ''
+    },
     cartItemsCount: cartItems.reduce((acc, ci) => acc + ci.quantity, 0),
     includeInstallation,
     includeHub,
@@ -61,7 +72,8 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 
 export const actions: Actions = {
   createOrder: async ({ locals, cookies }) => {
-    if (!locals.user) {
+    const currentUser = locals.user;
+    if (!currentUser) {
       return fail(401, { message: 'Unauthorized' });
     }
 
@@ -71,13 +83,13 @@ export const actions: Actions = {
     }
 
     const [cartItems, address] = await Promise.all([
-      db.cartItem.findMany({
-        where: { userId: locals.user.id },
-        include: { product: true }
-      }),
-      db.address.findUnique({
-        where: { id: addressId }
-      })
+      db.orm.public.CartItem
+        .where({ userId: currentUser.id })
+        .include('product')
+        .all(),
+      db.orm.public.Address
+        .where({ id: addressId })
+        .first()
     ]);
 
     if (cartItems.length === 0) {
@@ -91,7 +103,7 @@ export const actions: Actions = {
     const savedOptions = savedOptionsRaw ? JSON.parse(savedOptionsRaw) : {};
     const includeInstallation = savedOptions.includeInstallation ?? true;
     const includeHub = savedOptions.includeHub ?? false;
-    const preferredDate = savedOptions.preferredDate ? new Date(savedOptions.preferredDate) : null;
+    const preferredDate = savedOptions.preferredDate ? String(savedOptions.preferredDate).slice(0, 10) : null;
     const specialInstructions = savedOptions.specialInstructions ?? null;
 
     // Server authoritative recomputation
@@ -111,20 +123,24 @@ export const actions: Actions = {
     const dd = String(now.getDate()).padStart(2, '0');
     const datePrefix = `HM-${yy}${mm}${dd}`;
 
-    const todayOrderCount = await db.order.count({
-      where: {
-        orderNumber: { startsWith: datePrefix }
-      }
-    });
+    let todayOrderCount = 0;
+    try {
+      const agg = await db.orm.public.Order
+        .where((o) => o.orderNumber.like(`${datePrefix}%`))
+        .aggregate((a) => ({ count: a.count() }));
+      todayOrderCount = Number(agg.count ?? 0);
+    } catch {
+      todayOrderCount = 0;
+    }
 
     const sequence = String(todayOrderCount + 1).padStart(4, '0');
     const orderNumber = `${datePrefix}-${sequence}`;
 
-    // Create Order with Items
-    const order = await db.order.create({
-      data: {
+    // Create Order and OrderItems in a transaction
+    const order = await db.transaction(async (tx) => {
+      const newOrder = await tx.orm.public.Order.create({
         orderNumber,
-        userId: locals.user.id,
+        userId: currentUser.id,
         addressId: address.id,
         addressSnapshot: {
           province: address.province,
@@ -141,45 +157,48 @@ export const actions: Actions = {
         devicesSubtotalIdr: quote.devicesSubtotalIdr,
         installationFeeIdr: quote.installationFeeIdr,
         addOnsIdr: quote.addOnsIdr,
-        totalIdr: quote.totalIdr,
-        items: {
-          create: [
-            ...cartItems.map((ci) => ({
-              lineType: 'DEVICE' as const,
-              productId: ci.productId,
-              nameSnapshot: ci.product.name,
-              imageSnapshot: ci.product.imageUrl,
-              unitPriceIdr: ci.product.priceIdr,
-              quantity: ci.quantity,
-              lineTotalIdr: ci.product.priceIdr * ci.quantity
-            })),
-            ...(includeInstallation
-              ? [
-                  {
-                    lineType: 'INSTALLATION' as const,
-                    nameSnapshot: 'Professional Technician Installation',
-                    imageSnapshot: null,
-                    unitPriceIdr: INSTALL_FEE_PER_UNIT_IDR,
-                    quantity: quote.deviceCount,
-                    lineTotalIdr: quote.installationFeeIdr
-                  }
-                ]
-              : []),
-            ...(includeHub
-              ? [
-                  {
-                    lineType: 'ADDON' as const,
-                    nameSnapshot: 'Zigbee Multi-Protocol Gateway Hub Gen 3',
-                    imageSnapshot: '/images/product-hub.png',
-                    unitPriceIdr: HUB_PRICE_IDR,
-                    quantity: 1,
-                    lineTotalIdr: HUB_PRICE_IDR
-                  }
-                ]
-              : [])
-          ]
-        }
+        totalIdr: quote.totalIdr
+      });
+
+      for (const ci of cartItems) {
+        if (!ci.product) continue;
+        await tx.orm.public.OrderItem.create({
+          orderId: newOrder.id,
+          lineType: 'DEVICE',
+          productId: ci.productId,
+          nameSnapshot: ci.product.name,
+          imageSnapshot: ci.product.imageUrl,
+          unitPriceIdr: ci.product.priceIdr,
+          quantity: ci.quantity,
+          lineTotalIdr: ci.product.priceIdr * ci.quantity
+        });
       }
+
+      if (includeInstallation) {
+        await tx.orm.public.OrderItem.create({
+          orderId: newOrder.id,
+          lineType: 'INSTALLATION',
+          nameSnapshot: 'Professional Technician Installation',
+          imageSnapshot: null,
+          unitPriceIdr: INSTALL_FEE_PER_UNIT_IDR,
+          quantity: quote.deviceCount,
+          lineTotalIdr: quote.installationFeeIdr
+        });
+      }
+
+      if (includeHub) {
+        await tx.orm.public.OrderItem.create({
+          orderId: newOrder.id,
+          lineType: 'ADDON',
+          nameSnapshot: 'Zigbee Multi-Protocol Gateway Hub Gen 3',
+          imageSnapshot: '/images/product-hub.png',
+          unitPriceIdr: HUB_PRICE_IDR,
+          quantity: 1,
+          lineTotalIdr: HUB_PRICE_IDR
+        });
+      }
+
+      return newOrder;
     });
 
     // Create Payment Session
@@ -189,20 +208,18 @@ export const actions: Actions = {
       orderNumber: order.orderNumber,
       amountIdr: order.totalIdr,
       customer: {
-        fullName: locals.user.fullName,
-        email: locals.user.email,
-        phone: locals.user.phone
+        fullName: currentUser.fullName,
+        email: currentUser.email,
+        phone: currentUser.phone
       }
     });
 
-    await db.payment.create({
-      data: {
-        orderId: order.id,
-        provider: paymentResult.provider,
-        providerRef: paymentResult.token,
-        status: 'PENDING',
-        amountIdr: order.totalIdr
-      }
+    await db.orm.public.Payment.create({
+      orderId: order.id,
+      provider: paymentResult.provider,
+      providerRef: paymentResult.token,
+      status: 'PENDING',
+      amountIdr: order.totalIdr
     });
 
     return {

@@ -17,21 +17,22 @@ export const GET: RequestHandler = async () => {
   };
 
   try {
-    await db.$queryRaw`SELECT 1`;
+    const pingQuery = db.raw.sql`SELECT 1 as ping`.returnsRow({ ping: 'pg/int4@1' }).build();
+    await db.runtime().query(pingQuery);
     checks.connected = true;
-    checks.productCount = await db.product.count();
+
+    const agg = await db.orm.public.Product.aggregate((a) => ({ count: a.count() }));
+    checks.productCount = Number(agg.count ?? 0);
     checks.tablesExist = true;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    checks.errorHint = /does not exist|P2021|relation/i.test(msg)
-      ? 'Tables missing: run `npm run db:push` against the cloud database.'
-      : /Can't reach|ECONNREFUSED|ENOTFOUND|P1001|timed out/i.test(msg)
+    checks.errorHint = /does not exist|relation/i.test(msg)
+      ? 'Tables missing: run `npx prisma db update` against the cloud database.'
+      : /Can't reach|ECONNREFUSED|ENOTFOUND|timed out/i.test(msg)
         ? 'Database host unreachable: check the host in your connection string.'
-        : /authentication|password|P1000/i.test(msg)
+        : /authentication|password/i.test(msg)
           ? 'Authentication failed: check the user/password in your connection string.'
-          : /query engine|binary|libquery/i.test(msg)
-            ? 'Prisma engine not found for this runtime: redeploy without build cache.'
-            : 'Unknown database error: check the Vercel function logs.';
+          : 'Unknown database error: check the Vercel function logs.';
   }
 
   const ok = checks.connected === true && checks.tablesExist === true;

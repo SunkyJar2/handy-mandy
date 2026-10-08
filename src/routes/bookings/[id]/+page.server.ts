@@ -8,15 +8,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     throw redirect(303, `/login?next=/bookings/${params.id}`);
   }
 
-  const order = await db.order.findUnique({
-    where: { id: params.id },
-    include: {
-      technician: {
-        include: { areas: true }
-      },
-      items: true
-    }
-  });
+  const order = await db.orm.public.Order
+    .where({ id: params.id })
+    .include('technician', (t) => t.include('areas'))
+    .include('items')
+    .first();
 
   if (!order || order.userId !== locals.user.id) {
     throw error(404, 'Booking not found');
@@ -27,8 +23,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   const orderDetail: OrderDetailDto = {
     id: order.id,
     orderNumber: order.orderNumber,
-    status: order.status,
-    createdAt: order.createdAt.toISOString(),
+    status: order.status as any,
+    createdAt: order.createdAt ? new Date(order.createdAt.epochMilliseconds).toISOString() : '',
     itemNames: order.items.filter((i) => i.lineType === 'DEVICE').map((i) => i.nameSnapshot),
     totalIdr: order.totalIdr,
     technician: order.technician
@@ -49,11 +45,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       notes: addr.notes || null
     },
     includeInstallation: order.includeInstallation,
-    preferredDate: order.preferredDate ? order.preferredDate.toISOString().split('T')[0] : null,
+    preferredDate: order.preferredDate ? String(order.preferredDate).slice(0, 10) : null,
     specialInstructions: order.specialInstructions,
-    estimatedFinishDate: order.estimatedFinishDate ? order.estimatedFinishDate.toISOString().split('T')[0] : null,
+    estimatedFinishDate: order.estimatedFinishDate ? String(order.estimatedFinishDate).slice(0, 10) : null,
     lines: order.items.map((item) => ({
-      lineType: item.lineType,
+      lineType: item.lineType as any,
       name: item.nameSnapshot,
       imageUrl: item.imageSnapshot,
       unitPriceIdr: item.unitPriceIdr,

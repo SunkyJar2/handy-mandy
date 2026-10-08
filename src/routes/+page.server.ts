@@ -1,25 +1,21 @@
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import type { ProductDto, CategoryDto } from '$lib/shared/types';
+import type { ProductDto } from '$lib/shared/types';
 
 export const load: PageServerLoad = async ({ locals }) => {
   const [featuredProducts, categories] = await Promise.all([
-    db.product.findMany({
-      where: { status: 'ACTIVE', isFeatured: true },
-      include: { category: true },
-      orderBy: [{ featuredRank: 'asc' }, { createdAt: 'desc' }],
-      take: 8
-    }),
-    db.category.findMany({
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        products: {
-          where: { status: 'ACTIVE' },
-          include: { category: true },
-          orderBy: { createdAt: 'desc' }
-        }
-      }
-    })
+    db.orm.public.Product
+      .where({ status: 'ACTIVE', isFeatured: true })
+      .include('category')
+      .orderBy((p) => p.featuredRank.asc())
+      .limit(8)
+      .all(),
+    db.orm.public.Category
+      .orderBy((c) => c.sortOrder.asc())
+      .include('products', (prods) =>
+        prods.where({ status: 'ACTIVE' }).include('category')
+      )
+      .all()
   ]);
 
   const mapProduct = (p: (typeof featuredProducts)[0]): ProductDto => ({
@@ -29,8 +25,8 @@ export const load: PageServerLoad = async ({ locals }) => {
     description: p.description,
     priceIdr: p.priceIdr,
     imageUrl: p.imageUrl,
-    kind: p.kind,
-    status: p.status,
+    kind: p.kind as any,
+    status: p.status as any,
     isFeatured: p.isFeatured,
     featuredRank: p.featuredRank,
     category: {

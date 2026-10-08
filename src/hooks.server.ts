@@ -1,4 +1,5 @@
-import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
+import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
 import { getSessionIdFromCookies, validateSession } from '$lib/server/auth';
 
 export const handleError: HandleServerError = ({ error, event }) => {
@@ -24,7 +25,6 @@ export const handle: Handle = async ({ event, resolve }) => {
       console.error('[session] validation failed, treating as signed out', e);
     }
   }
-
 
   const { pathname, search } = event.url;
   const user = event.locals.user;

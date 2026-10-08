@@ -1,0 +1,211 @@
+// use prisma-8
+
+native_enum Role {
+  CUSTOMER = "CUSTOMER"
+  ADMIN    = "ADMIN"
+}
+
+native_enum ProductStatus {
+  ACTIVE   = "ACTIVE"
+  INACTIVE = "INACTIVE"
+}
+
+native_enum ProductKind {
+  DEVICE = "DEVICE"
+  ADDON  = "ADDON"
+}
+
+native_enum OrderStatus {
+  PENDING_PAYMENT    = "PENDING_PAYMENT"
+  PENDING_ASSIGNMENT = "PENDING_ASSIGNMENT"
+  ASSIGNED           = "ASSIGNED"
+  SCHEDULED          = "SCHEDULED"
+  IN_PROGRESS        = "IN_PROGRESS"
+  COMPLETED          = "COMPLETED"
+  CANCELLED          = "CANCELLED"
+}
+
+native_enum PaymentStatus {
+  PENDING = "PENDING"
+  PAID    = "PAID"
+  FAILED  = "FAILED"
+  EXPIRED = "EXPIRED"
+}
+
+native_enum OrderLineType {
+  DEVICE       = "DEVICE"
+  INSTALLATION = "INSTALLATION"
+  ADDON        = "ADDON"
+}
+
+native_enum TechnicianAvailability {
+  AVAILABLE   = "AVAILABLE"
+  UNAVAILABLE = "UNAVAILABLE"
+}
+
+model User {
+  id           String        @id @default(cuid(2))
+  fullName     String
+  email        String  @unique
+  phone        String?
+  passwordHash String
+  role         pg.enum(Role) @default("CUSTOMER")
+  createdAt    DateTime      @default(now())
+  updatedAt    temporal.updatedAt()
+  addresses    Address[]
+  cartItems    CartItem[]
+  orders       Order[]
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid(2))
+  userId    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Address {
+  id          String   @id @default(cuid(2))
+  userId      String
+  province    String
+  city        String
+  district    String
+  addressLine String
+  postalCode  String
+  notes       String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@index([userId])
+}
+
+model Category {
+  id        String    @id @default(cuid(2))
+  slug      String    @unique
+  name      String
+  sortOrder Int       @default(0)
+  products  Product[]
+}
+
+model Product {
+  id           String                 @id @default(cuid(2))
+  slug         String                 @unique
+  name         String
+  description  String
+  priceIdr     Int
+  imageUrl     String
+  kind         pg.enum(ProductKind)   @default("DEVICE")
+  status       pg.enum(ProductStatus) @default("ACTIVE")
+  isFeatured   Boolean                @default(false)
+  featuredRank Int?
+  categoryId   String
+  createdAt    DateTime               @default(now())
+  updatedAt    temporal.updatedAt()
+  category     Category               @relation(fields: [categoryId], references: [id])
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+
+  @@index([categoryId, status])
+  @@index([isFeatured, status])
+}
+
+model CartItem {
+  id        String   @id @default(cuid(2))
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  addedAt   DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+}
+
+model Order {
+  id                  String               @id @default(cuid(2))
+  orderNumber         String               @unique
+  userId              String
+  addressId           String?
+  addressSnapshot     Jsonb
+  technicianId        String?
+  status              pg.enum(OrderStatus) @default("PENDING_PAYMENT")
+  includeInstallation Boolean              @default(false)
+  preferredDate       DateString?
+  specialInstructions String?
+  devicesSubtotalIdr  Int
+  installationFeeIdr  Int                  @default(0)
+  addOnsIdr           Int                  @default(0)
+  totalIdr            Int
+  estimatedFinishDate DateString?
+  idempotencyKey      String?              @unique
+  createdAt           DateTime             @default(now())
+  paidAt              DateTime?
+  user                User                 @relation(fields: [userId], references: [id])
+  address             Address?             @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  technician          Technician?          @relation(fields: [technicianId], references: [id])
+  items               OrderItem[]
+  payments            Payment[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id            String                 @id @default(cuid(2))
+  orderId       String
+  lineType      pg.enum(OrderLineType)
+  productId     String?
+  nameSnapshot  String
+  imageSnapshot String?
+  unitPriceIdr  Int
+  quantity      Int
+  lineTotalIdr  Int
+  order         Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product?               @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+}
+
+model Payment {
+  id          String                 @id @default(cuid(2))
+  orderId     String
+  provider    String
+  providerRef String?                @unique
+  status      pg.enum(PaymentStatus) @default("PENDING")
+  amountIdr   Int
+  rawPayload  Jsonb?
+  createdAt   DateTime               @default(now())
+  updatedAt   temporal.updatedAt()
+  order       Order                  @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+}
+
+model Technician {
+  id           String                          @id @default(cuid(2))
+  fullName     String
+  avatarUrl    String?
+  city         String
+  ratingAvg    Numeric(2, 1)
+  ratingCount  Int                             @default(0)
+  highlight    String?
+  availability pg.enum(TechnicianAvailability) @default("AVAILABLE")
+  orders       Order[]
+  areas        TechnicianServiceArea[]
+
+  @@index([city, availability])
+}
+
+model TechnicianServiceArea {
+  id           String     @id @default(cuid(2))
+  technicianId String
+  area         String
+  technician   Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([technicianId, area])
+}

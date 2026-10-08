@@ -13,45 +13,36 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     return json({ error: { code: 'VALIDATION_FAILED', message: 'Order ID is required.' } }, { status: 422 });
   }
 
-  const order = await db.order.findUnique({
-    where: { id: orderId }
-  });
+  const order = await db.orm.public.Order.where({ id: orderId }).first();
 
   if (!order || order.userId !== locals.user.id) {
     return json({ error: { code: 'NOT_FOUND', message: 'Order not found.' } }, { status: 404 });
   }
 
   // Calculate estimated finish date (preferred date or +2 business days)
-  let estimatedFinishDate: Date;
+  let estimatedFinishDateStr: string;
   if (order.preferredDate) {
-    estimatedFinishDate = new Date(order.preferredDate);
+    estimatedFinishDateStr = String(order.preferredDate).slice(0, 10);
   } else {
-    estimatedFinishDate = new Date();
-    estimatedFinishDate.setDate(estimatedFinishDate.getDate() + 2);
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    estimatedFinishDateStr = d.toISOString().slice(0, 10);
   }
 
   // Transaction: mark order PENDING_ASSIGNMENT, mark payment PAID, clear cart
-  await db.$transaction(async (tx) => {
-    await tx.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'PENDING_ASSIGNMENT',
-        paidAt: new Date(),
-        estimatedFinishDate
-      }
+  await db.transaction(async (tx) => {
+    await tx.orm.public.Order.where({ id: orderId }).update({
+      status: 'PENDING_ASSIGNMENT',
+      paidAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+      estimatedFinishDate: estimatedFinishDateStr
     });
 
-    await tx.payment.updateMany({
-      where: { orderId },
-      data: {
-        status: 'PAID'
-      }
+    await tx.orm.public.Payment.where({ orderId }).updateAll({
+      status: 'PAID'
     });
 
     // Clear user cart
-    await tx.cartItem.deleteMany({
-      where: { userId: locals.user!.id }
-    });
+    await tx.orm.public.CartItem.where({ userId: locals.user!.id }).deleteAll();
   });
 
   return json({

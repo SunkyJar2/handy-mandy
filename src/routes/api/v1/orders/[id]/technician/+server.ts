@@ -14,9 +14,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
     return json({ error: { code: 'VALIDATION_FAILED', message: 'Order ID and Technician ID are required.' } }, { status: 422 });
   }
 
-  const order = await db.order.findUnique({
-    where: { id: orderId }
-  });
+  const order = await db.orm.public.Order.where({ id: orderId }).first();
 
   if (!order || order.userId !== locals.user.id) {
     return json({ error: { code: 'NOT_FOUND', message: 'Booking not found.' } }, { status: 404 });
@@ -34,9 +32,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
     );
   }
 
-  const technician = await db.technician.findUnique({
-    where: { id: technicianId }
-  });
+  const technician = await db.orm.public.Technician.where({ id: technicianId }).first();
 
   if (!technician || technician.availability !== 'AVAILABLE') {
     return json(
@@ -51,13 +47,14 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
   }
 
   // Update order with assigned technician
-  const updatedOrder = await db.order.update({
-    where: { id: orderId },
-    data: {
-      technicianId,
-      status: 'ASSIGNED'
-    }
+  const updatedOrder = await db.orm.public.Order.where({ id: orderId }).update({
+    technicianId,
+    status: 'ASSIGNED'
   });
+
+  if (!updatedOrder) {
+    return json({ error: { code: 'NOT_FOUND', message: 'Order not found.' } }, { status: 404 });
+  }
 
   return json({
     success: true,

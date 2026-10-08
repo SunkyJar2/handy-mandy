@@ -12,17 +12,13 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
   }
 
   // Ensure item belongs to user
-  const item = await db.cartItem.findUnique({
-    where: { id: itemId }
-  });
+  const item = await db.orm.public.CartItem.where({ id: itemId }).first();
 
   if (!item || item.userId !== locals.user.id) {
     return json({ error: { code: 'NOT_FOUND', message: 'Cart item not found.' } }, { status: 404 });
   }
 
-  await db.cartItem.delete({
-    where: { id: itemId }
-  });
+  await db.orm.public.CartItem.where({ id: itemId }).delete();
 
   return json({ success: true, message: 'Item removed from cart.' });
 };

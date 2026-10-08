@@ -26,9 +26,9 @@ export const actions: Actions = {
       });
     }
 
-    const user = await db.user.findUnique({
-      where: { email: parseResult.data.email }
-    });
+    const user = await db.orm.public.User.where({
+      email: parseResult.data.email
+    }).first();
 
     if (!user) {
       return fail(401, {

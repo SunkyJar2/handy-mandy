@@ -1,1 +1,1 @@
-export { db } from '../../prisma/db';
+export { db, getResolvedDatabaseUrl, cleanUrl } from '../../prisma/db';

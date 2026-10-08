@@ -119,5 +119,12 @@
         </section>
       {/if}
     {/each}
+
+    {#if data.featured.length === 0 && data.sections.every((s) => s.products.length === 0)}
+      <div class="text-center py-16 px-4 bg-[#142A38]/40 rounded-2xl border border-white/10 max-w-lg mx-auto">
+        <p class="font-['Outfit'] text-lg text-[#CFF2FF]/90 font-medium">Catalog items are warming up</p>
+        <p class="text-sm text-white/50 mt-1">If the database was sleeping or initializing, please refresh in a moment, or inspect <a href="/api/health" class="underline text-[#4A6FA5]">system diagnostics</a>.</p>
+      </div>
+    {/if}
   </div>
 </div>

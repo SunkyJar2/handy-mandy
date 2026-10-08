@@ -1,5 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import { toIsoDateTime } from '$lib/server/date';
 import { addressSchema } from '$lib/shared/schemas';
 
 export const GET: RequestHandler = async ({ locals }) => {
@@ -22,7 +23,7 @@ export const GET: RequestHandler = async ({ locals }) => {
     postalCode: a.postalCode,
     notes: a.notes,
     isDefault: a.isDefault,
-    createdAt: a.createdAt ? new Date(a.createdAt.epochMilliseconds).toISOString() : ''
+    createdAt: toIsoDateTime(a.createdAt)
   }));
 
   return json({ addresses: mapped });
@@ -71,7 +72,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       postalCode: address.postalCode,
       notes: address.notes,
       isDefault: address.isDefault,
-      createdAt: address.createdAt ? new Date(address.createdAt.epochMilliseconds).toISOString() : ''
+      createdAt: toIsoDateTime(address.createdAt)
     }
   }, { status: 201 });
 };

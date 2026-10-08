@@ -1,6 +1,7 @@
 import { redirect, fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
+import { toIsoDateTime } from '$lib/server/date';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
   if (!locals.user) {
@@ -40,7 +41,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       postalCode: a.postalCode,
       notes: a.notes,
       isDefault: a.isDefault,
-      createdAt: a.createdAt ? new Date(a.createdAt.epochMilliseconds).toISOString() : ''
+      createdAt: toIsoDateTime(a.createdAt)
     }))
     .sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
 

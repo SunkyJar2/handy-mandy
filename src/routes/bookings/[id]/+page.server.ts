@@ -1,6 +1,7 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
+import { toIsoDateTime } from '$lib/server/date';
 import type { OrderDetailDto } from '$lib/shared/types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -24,7 +25,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     id: order.id,
     orderNumber: order.orderNumber,
     status: order.status as any,
-    createdAt: order.createdAt ? new Date(order.createdAt.epochMilliseconds).toISOString() : '',
+    createdAt: toIsoDateTime(order.createdAt),
     itemNames: order.items.filter((i) => i.lineType === 'DEVICE').map((i) => i.nameSnapshot),
     totalIdr: order.totalIdr,
     technician: order.technician

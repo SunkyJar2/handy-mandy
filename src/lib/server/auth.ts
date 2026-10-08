@@ -24,7 +24,13 @@ export async function validateSession(sessionId: string): Promise<{ user: UserDt
 
     if (!session || !session.user) return null;
 
-    if (session.expiresAt.epochMilliseconds < Date.now()) {
+    const expiresAtMs = typeof session.expiresAt?.epochMilliseconds === 'number'
+      ? session.expiresAt.epochMilliseconds
+      : session.expiresAt instanceof Date
+        ? session.expiresAt.getTime()
+        : new Date(String(session.expiresAt)).getTime();
+
+    if (expiresAtMs < Date.now()) {
       await db.orm.public.Session.where({ id: sessionId }).delete().catch(() => {});
       return null;
     }

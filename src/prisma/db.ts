@@ -4,7 +4,7 @@ import postgres from '@prisma/orm-postgres/runtime';
 import type { Contract } from './contract.d';
 import contractJson from './contract.json' with { type: 'json' };
 
-function cleanUrl(raw?: string): string | null {
+export function cleanUrl(raw?: string): string | null {
   if (!raw) return null;
   let url = raw.trim();
   // Strip wrapping double or single quotes if copied with quotes
@@ -12,12 +12,20 @@ function cleanUrl(raw?: string): string | null {
     url = url.slice(1, -1).trim();
   }
   if (!url) return null;
+
   try {
     const parsed = new URL(url);
     if (parsed.protocol === 'postgres:' || parsed.protocol === 'postgresql:') {
-      return url;
+      // Remove channel_binding if present (can cause SCRAM auth failures on serverless)
+      parsed.searchParams.delete('channel_binding');
+      // If remote host and no sslmode set, default to sslmode=require
+      if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1' && !parsed.searchParams.has('sslmode')) {
+        parsed.searchParams.set('sslmode', 'require');
+      }
+      return parsed.toString();
     }
   } catch {
+    // Repair attempt for unencoded special characters in password/user
     try {
       const match = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):([^@]+)@(.+)$/);
       if (match) {
@@ -26,7 +34,11 @@ function cleanUrl(raw?: string): string | null {
         const repaired = `${proto}${encodeURIComponent(decodeURIComponent(user))}:${encodedPass}@${rest}`;
         const check = new URL(repaired);
         if (check.protocol === 'postgres:' || check.protocol === 'postgresql:') {
-          return repaired;
+          check.searchParams.delete('channel_binding');
+          if (check.hostname !== 'localhost' && check.hostname !== '127.0.0.1' && !check.searchParams.has('sslmode')) {
+            check.searchParams.set('sslmode', 'require');
+          }
+          return check.toString();
         }
       }
     } catch {
@@ -40,8 +52,7 @@ export function getResolvedDatabaseUrl(): string {
   const candidates = [
     process.env.DATABASE_URL,
     process.env.POSTGRES_PRISMA_URL,
-    process.env.POSTGRES_URL,
-    'postgresql://postgres:postgres@localhost:5432/handymandy'
+    process.env.POSTGRES_URL
   ];
 
   for (const c of candidates) {
@@ -49,7 +60,15 @@ export function getResolvedDatabaseUrl(): string {
     if (cleaned) return cleaned;
   }
 
-  return 'postgresql://postgres:postgres@localhost:5432/handymandy';
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    console.error(
+      '[CRITICAL DATABASE ERROR] No DATABASE_URL or POSTGRES_URL found in environment variables on Vercel!\n' +
+      'Please go to Vercel Dashboard -> Your Project -> Settings -> Environment Variables and ensure DATABASE_URL is added for Production & Preview environments.'
+    );
+  }
+
+  // Local development fallback
+  return cleanUrl(process.env.DATABASE_URL) || 'postgresql://postgres:postgres@127.0.0.1:5432/handymandy';
 }
 
 const globalForPrisma = globalThis as unknown as {

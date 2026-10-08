@@ -1,6 +1,7 @@
 import { redirect, fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
+import { toIsoDateTime } from '$lib/server/date';
 import { calculateQuote, INSTALL_FEE_PER_UNIT_IDR, HUB_PRICE_IDR } from '$lib/shared/pricing';
 import { getPaymentProvider } from '$lib/server/payment';
 
@@ -59,7 +60,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       postalCode: address.postalCode,
       notes: address.notes,
       isDefault: address.isDefault,
-      createdAt: address.createdAt ? new Date(address.createdAt.epochMilliseconds).toISOString() : ''
+      createdAt: toIsoDateTime(address.createdAt)
     },
     cartItemsCount: cartItems.reduce((acc, ci) => acc + ci.quantity, 0),
     includeInstallation,

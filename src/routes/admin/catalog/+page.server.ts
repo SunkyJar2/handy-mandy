@@ -1,6 +1,7 @@
 import { redirect, fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
+import { toIsoDateTime } from '$lib/server/date';
 import type { AdminProductDto, CategoryDto } from '$lib/shared/types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -32,7 +33,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     status: p.status as any,
     isFeatured: p.isFeatured,
     featuredRank: p.featuredRank,
-    updatedAt: p.updatedAt ? new Date(p.updatedAt.epochMilliseconds).toISOString() : '',
+    updatedAt: toIsoDateTime(p.updatedAt),
     category: {
       id: p.category.id,
       slug: p.category.slug,

@@ -33,6 +33,7 @@
 	},
 	"dependencies": {
 		"@prisma/client": "^6.19.3",
+		"@sveltejs/adapter-vercel": "^7.0.0",
 		"bcryptjs": "^3.0.3",
 		"lucide-svelte": "^1.0.1",
 		"prisma": "^6.19.3",

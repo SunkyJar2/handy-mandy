@@ -1,5 +1,10 @@
-import { redirect, type Handle } from '@sveltejs/kit';
+import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
 import { getSessionIdFromCookies, validateSession } from '$lib/server/auth';
+
+export const handleError: HandleServerError = ({ error, event, status }) => {
+  console.error(`[server error] ${status} ${event.request.method} ${event.url.pathname}`, error);
+  return { message: 'Something went wrong. Please try again.' };
+};
 
 export const handle: Handle = async ({ event, resolve }) => {
   const sessionId = getSessionIdFromCookies(event.cookies);

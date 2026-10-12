@@ -60,9 +60,9 @@
       <p class="text-sm text-[#8CAAB5]">Try selecting another category or check back soon.</p>
     </div>
   {:else}
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
       {#each data.products as product (product.id)}
-        <div class="flex justify-center">
+        <div class="flex justify-center w-full min-w-0">
           <ProductCard {product} user={data.user} />
         </div>
       {/each}

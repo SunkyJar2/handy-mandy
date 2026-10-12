@@ -8,9 +8,10 @@
   interface Props {
     product: ProductDto;
     user: UserDto | null;
+    class?: string;
   }
 
-  let { product, user }: Props = $props();
+  let { product, user, class: className = '' }: Props = $props();
   let isAdding = $state(false);
   let isAdded = $state(false);
 
@@ -58,7 +59,7 @@
 
 <!-- Product Card matching Figma frame 93:76: 336x349px -->
 <div
-  class="group relative flex-none w-[310px] sm:w-[336px] h-[350px] rounded-[12px] p-0 flex flex-col justify-between overflow-hidden border border-[#CFF2FF]/10 transition-all duration-300 hover:border-[#CFF2FF]/30 hover:shadow-2xl hover:-translate-y-1"
+  class="group relative w-full max-w-[340px] h-[350px] rounded-[12px] p-0 flex flex-col justify-between overflow-hidden border border-[#CFF2FF]/10 transition-all duration-300 hover:border-[#CFF2FF]/30 hover:shadow-2xl hover:-translate-y-1 {className}"
   style="background: rgba(74, 111, 165, 0.26); box-shadow: 0px 2px 2.8px 0px rgba(0, 0, 0, 0.25);"
 >
   <!-- Image container (336x228) -->
@@ -89,8 +90,8 @@
     </h3>
 
     <!-- Price and Add Button row -->
-    <div class="flex items-center justify-between mt-2 pt-1">
-      <div class="font-['Outfit'] font-bold text-lg sm:text-[20px] text-[#25ED82] leading-none">
+    <div class="flex items-center justify-between mt-2 pt-1 gap-2">
+      <div class="font-['Outfit'] font-bold text-base sm:text-[19px] text-[#25ED82] leading-none shrink-0">
         {formatIdr(product.priceIdr)}
       </div>
 
@@ -98,16 +99,16 @@
       <button
         onclick={handleAdd}
         disabled={isAdding}
-        class="h-10 px-4 rounded-[8px] border-2 border-[#CFF2FF]/40 text-[#CFF2FF] hover:bg-[#CFF2FF]/15 hover:border-[#CFF2FF] transition-all flex items-center gap-2 active:scale-95 disabled:opacity-60"
+        class="h-10 px-3.5 sm:px-4 rounded-[8px] border-2 border-[#CFF2FF]/40 text-[#CFF2FF] hover:bg-[#CFF2FF]/15 hover:border-[#CFF2FF] transition-all flex items-center gap-1.5 sm:gap-2 active:scale-95 disabled:opacity-60 shrink-0"
         aria-label="Add {product.name} to cart"
       >
         {#if isAdding}
           <Loader2 class="w-4 h-4 animate-spin text-[#CFF2FF]" />
         {:else if isAdded}
           <Check class="w-4 h-4 text-[#25ED82]" />
-          <span class="font-['Outfit'] text-base font-medium text-[#25ED82]">Added</span>
+          <span class="font-['Outfit'] text-sm sm:text-base font-medium text-[#25ED82]">Added</span>
         {:else}
-          <span class="font-['Outfit'] text-lg font-normal">Add</span>
+          <span class="font-['Outfit'] text-base sm:text-lg font-normal">Add</span>
           <ShoppingCart class="w-4 h-4 text-[#CFF2FF]/90" />
         {/if}
       </button>

@@ -80,7 +80,7 @@
         <!-- Horizontal Carousel with gap 21px matching Figma -->
         <div class="flex gap-[21px] overflow-x-auto pb-6 pt-2 snap-x snap-mandatory scroll-smooth">
           {#each data.featured as product (product.id)}
-            <div class="snap-start shrink-0">
+            <div class="snap-start shrink-0 w-[300px] sm:w-[336px]">
               <ProductCard {product} user={data.user} />
             </div>
           {/each}
@@ -111,7 +111,7 @@
           <!-- Horizontal Carousel -->
           <div class="flex gap-[21px] overflow-x-auto pb-6 pt-2 snap-x snap-mandatory scroll-smooth">
             {#each section.products as product (product.id)}
-              <div class="snap-start shrink-0">
+              <div class="snap-start shrink-0 w-[300px] sm:w-[336px]">
                 <ProductCard {product} user={data.user} />
               </div>
             {/each}

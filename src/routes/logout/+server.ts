@@ -6,5 +6,7 @@ export const POST: RequestHandler = async ({ locals, cookies }) => {
     await invalidateSession(locals.sessionId);
   }
   deleteSessionCookie(cookies);
+  cookies.delete('hm_checkout_address', { path: '/' });
+  cookies.delete('hm_checkout_options', { path: '/' });
   throw redirect(303, '/login');
 };

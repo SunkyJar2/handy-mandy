@@ -1,13 +1,14 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import type { ActionData } from './$types';
+  import type { ActionData, PageData } from './$types';
   import { Eye, EyeOff, Loader2 } from 'lucide-svelte';
 
   interface Props {
+    data: PageData;
     form: ActionData;
   }
 
-  let { form }: Props = $props();
+  let { data, form }: Props = $props();
   let showPassword = $state(false);
   let isSubmitting = $state(false);
 </script>
@@ -59,6 +60,7 @@
 
         <form
           method="POST"
+          action="?next={encodeURIComponent(data.next)}"
           use:enhance={() => {
             isSubmitting = true;
             return async ({ update }) => {
@@ -178,7 +180,10 @@
       <!-- Cross link -->
       <div class="mt-6 text-center text-sm font-['Outfit'] text-[#CFF2FF]/80">
         Already have an account?
-        <a href="/login" class="font-semibold text-white underline ml-1 hover:text-[#CFF2FF]">
+        <a
+          href={data.next && data.next !== '/' ? `/login?next=${encodeURIComponent(data.next)}` : '/login'}
+          class="font-semibold text-white underline ml-1 hover:text-[#CFF2FF]"
+        >
           Sign in
         </a>
       </div>

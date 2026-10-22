@@ -1,15 +1,17 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import type { PageData } from './$types';
+  import type { ActionData, PageData } from './$types';
   import CheckoutStepper from '$lib/components/CheckoutStepper.svelte';
   import { formatIdr, INSTALL_FEE_PER_UNIT_IDR, HUB_PRICE_IDR } from '$lib/shared/pricing';
+  import { getTomorrowLocalDate, getMaxBookingLocalDate } from '$lib/shared/checkout';
   import { ArrowRight, Calendar as CalendarIcon, FileText } from 'lucide-svelte';
 
   interface Props {
     data: PageData;
+    form?: ActionData;
   }
 
-  let { data }: Props = $props();
+  let { data, form }: Props = $props();
 
   let includeInstallation = $state(false);
   let includeHub = $state(false);
@@ -23,15 +25,8 @@
     specialInstructions = data.specialInstructions ?? '';
   });
 
-  // Tomorrow date string in YYYY-MM-DD
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
-
-  // Max 60 days
-  const maxDateObj = new Date();
-  maxDateObj.setDate(maxDateObj.getDate() + 60);
-  const maxDate = maxDateObj.toISOString().split('T')[0];
+  const minDate = getTomorrowLocalDate();
+  const maxDate = getMaxBookingLocalDate(60);
 
   // Reactive quote computation
   let devicesSubtotalIdr = $derived(data.initialQuote.devicesSubtotalIdr);
@@ -52,6 +47,12 @@
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
     <!-- Left Main Column (col-span-8) -->
     <div class="lg:col-span-8 space-y-6">
+      {#if form?.message}
+        <div class="p-4 rounded-2xl bg-[#FF6D6F]/10 border border-[#FF6D6F]/40 text-[#FF6D6F] text-sm">
+          {form.message}
+        </div>
+      {/if}
+
       <h2 class="font-['Outfit'] font-bold text-2xl sm:text-[32px] text-[#CFF2FF] mb-2">
         1. Configure Installation & Add-ons
       </h2>

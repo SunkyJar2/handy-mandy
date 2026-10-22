@@ -1,13 +1,14 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import type { PageData } from './$types';
+  import type { ActionData, PageData } from './$types';
   import { Star, MapPin, CheckCircle, AlertCircle, Info, Loader2 } from 'lucide-svelte';
 
   interface Props {
     data: PageData;
+    form?: ActionData;
   }
 
-  let { data }: Props = $props();
+  let { data, form }: Props = $props();
   let assigningTechId = $state<string | null>(null);
 </script>
 
@@ -16,6 +17,12 @@
 </svelte:head>
 
 <div class="max-w-[1320px] mx-auto px-6 py-10 space-y-6">
+  {#if form?.message}
+    <div class="p-4 rounded-2xl bg-[#FF6D6F]/10 border border-[#FF6D6F]/40 text-[#FF6D6F] text-sm">
+      {form.message}
+    </div>
+  {/if}
+
   <!-- Page Header matching Figma #78:52 / #78:53 -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>

@@ -147,7 +147,10 @@
       <!-- Cross link -->
       <div class="mt-8 text-center text-sm font-['Outfit'] text-[#CFF2FF]/80">
         New here?
-        <a href="/register" class="font-semibold text-white underline ml-1 hover:text-[#CFF2FF]">
+        <a
+          href={data.next && data.next !== '/' ? `/register?next=${encodeURIComponent(data.next)}` : '/register'}
+          class="font-semibold text-white underline ml-1 hover:text-[#CFF2FF]"
+        >
           Create your account
         </a>
       </div>

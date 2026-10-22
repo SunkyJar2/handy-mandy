@@ -79,6 +79,8 @@
   }
 </script>
 
+<svelte:window onkeydown={(e) => { if (isOpen && e.key === 'Escape') onClose(); }} />
+
 {#if isOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -87,12 +89,16 @@
     onclick={onClose}
   >
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="product-modal-title"
+      tabindex="-1"
       class="relative w-full max-w-lg rounded-2xl p-6 sm:p-8 border border-[#4A6FA5]/40 shadow-2xl backdrop-blur-md"
       style="background: #1A3551;"
       onclick={(e) => e.stopPropagation()}
     >
       <div class="flex items-center justify-between pb-4 border-b border-[#CFF2FF]/10 mb-6">
-        <h2 class="font-['Outfit'] font-bold text-2xl text-[#CFF2FF]">
+        <h2 id="product-modal-title" class="font-['Outfit'] font-bold text-2xl text-[#CFF2FF]">
           {initialProduct ? 'Edit Product' : 'Add New Product'}
         </h2>
         <button
@@ -186,21 +192,25 @@
               class="flex-1 h-10 px-3 rounded-lg bg-[#071824]/80 border border-[#CFF2FF]/30 text-white text-sm focus:outline-none focus:border-[#CFF2FF]"
             />
           </div>
-          <div class="flex gap-2 mt-2">
-            <button
-              type="button"
-              onclick={() => (imageUrl = '/images/product-hub.png')}
-              class="text-xs px-2 py-1 rounded bg-[#071824] text-[#CFF2FF]/80 hover:text-white"
-            >
-              Use Hub Image
-            </button>
-            <button
-              type="button"
-              onclick={() => (imageUrl = '/images/product-lock.png')}
-              class="text-xs px-2 py-1 rounded bg-[#071824] text-[#CFF2FF]/80 hover:text-white"
-            >
-              Use Lock Image
-            </button>
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            {#each [
+              { label: 'Hub', url: '/images/product-hub.png' },
+              { label: 'Lock', url: '/images/product-lock.png' },
+              { label: 'Camera', url: '/images/product-camera.jpg' },
+              { label: 'Doorbell', url: '/images/product-doorbell.jpg' },
+              { label: 'Bulb', url: '/images/product-bulb.jpg' },
+              { label: 'Sensor', url: '/images/product-motion-sensor.jpg' },
+              { label: 'Switch', url: '/images/product-switch.jpg' },
+              { label: 'Soundbar', url: '/images/product-soundbar.jpg' }
+            ] as preset}
+              <button
+                type="button"
+                onclick={() => (imageUrl = preset.url)}
+                class="text-xs px-2 py-1 rounded bg-[#071824] text-[#CFF2FF]/80 hover:text-white transition-colors"
+              >
+                {preset.label}
+              </button>
+            {/each}
           </div>
         </div>
 

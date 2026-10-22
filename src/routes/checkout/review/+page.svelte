@@ -4,6 +4,7 @@
   import CheckoutStepper from '$lib/components/CheckoutStepper.svelte';
   import MockSnapModal from '$lib/components/MockSnapModal.svelte';
   import { formatIdr } from '$lib/shared/pricing';
+  import { formatIsoDateDisplay } from '$lib/shared/checkout';
   import { MapPin, Calendar, Edit3, ShieldCheck, Loader2 } from 'lucide-svelte';
 
   interface Props {
@@ -32,21 +33,6 @@
       }
     }
   });
-
-  function formatDateDisplay(d: string | null): string {
-    if (!d) return 'Earliest Available (1-2 business days)';
-    try {
-      const parsed = new Date(d);
-      return parsed.toLocaleDateString('id-ID', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return d;
-    }
-  }
 </script>
 
 <svelte:head>
@@ -133,7 +119,7 @@
           <div>
             <div class="text-xs text-[#8CAAB5] uppercase font-bold tracking-wider">Target Date:</div>
             <p class="text-base sm:text-lg text-white font-medium">
-              {formatDateDisplay(data.preferredDate)}
+              {formatIsoDateDisplay(data.preferredDate)}
             </p>
           </div>
 

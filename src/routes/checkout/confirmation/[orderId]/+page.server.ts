@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 
@@ -14,6 +14,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
   if (!order || order.userId !== locals.user.id) {
     throw error(404, 'Order not found');
+  }
+
+  if (order.status === 'PENDING_PAYMENT') {
+    throw redirect(303, '/checkout/review');
   }
 
   return {

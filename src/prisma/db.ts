@@ -19,8 +19,13 @@ export function cleanUrl(raw?: string): string | null {
       // Remove channel_binding if present (can cause SCRAM auth failures on serverless)
       parsed.searchParams.delete('channel_binding');
       // If remote host and no sslmode set, default to sslmode=require
-      if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1' && !parsed.searchParams.has('sslmode')) {
-        parsed.searchParams.set('sslmode', 'require');
+      if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
+        if (!parsed.searchParams.has('sslmode')) {
+          parsed.searchParams.set('sslmode', 'require');
+        }
+        if (parsed.searchParams.get('sslmode') === 'require' && !parsed.searchParams.has('uselibpqcompat')) {
+          parsed.searchParams.set('uselibpqcompat', 'true');
+        }
       }
       return parsed.toString();
     }
@@ -35,8 +40,13 @@ export function cleanUrl(raw?: string): string | null {
         const check = new URL(repaired);
         if (check.protocol === 'postgres:' || check.protocol === 'postgresql:') {
           check.searchParams.delete('channel_binding');
-          if (check.hostname !== 'localhost' && check.hostname !== '127.0.0.1' && !check.searchParams.has('sslmode')) {
-            check.searchParams.set('sslmode', 'require');
+          if (check.hostname !== 'localhost' && check.hostname !== '127.0.0.1') {
+            if (!check.searchParams.has('sslmode')) {
+              check.searchParams.set('sslmode', 'require');
+            }
+            if (check.searchParams.get('sslmode') === 'require' && !check.searchParams.has('uselibpqcompat')) {
+              check.searchParams.set('uselibpqcompat', 'true');
+            }
           }
           return check.toString();
         }

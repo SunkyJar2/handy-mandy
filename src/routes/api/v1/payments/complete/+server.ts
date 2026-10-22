@@ -1,7 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import { canCompletePayment } from '$lib/server/guards';
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, cookies }) => {
   if (!locals.user) {
     return json({ error: { code: 'UNAUTHENTICATED', message: 'Please sign in.' } }, { status: 401 });
   }
@@ -17,6 +18,22 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
   if (!order || order.userId !== locals.user.id) {
     return json({ error: { code: 'NOT_FOUND', message: 'Order not found.' } }, { status: 404 });
+  }
+
+  const paymentState = canCompletePayment(order.status);
+  if (paymentState === 'invalid') {
+    return json({
+      error: { code: 'INVALID_STATE', message: 'Order cannot be paid in its current state.' }
+    }, { status: 409 });
+  }
+
+  if (paymentState === 'idempotent') {
+    cookies.delete('hm_checkout_address', { path: '/' });
+    cookies.delete('hm_checkout_options', { path: '/' });
+    return json({
+      success: true,
+      redirectUrl: `/checkout/confirmation/${orderId}`
+    });
   }
 
   // Calculate estimated finish date (preferred date or +2 business days)
@@ -44,6 +61,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     // Clear user cart
     await tx.orm.public.CartItem.where({ userId: locals.user!.id }).deleteAll();
   });
+
+  cookies.delete('hm_checkout_address', { path: '/' });
+  cookies.delete('hm_checkout_options', { path: '/' });
 
   return json({
     success: true,

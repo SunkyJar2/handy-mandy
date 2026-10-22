@@ -1,20 +1,27 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import type { PageData } from './$types';
+  import type { ActionData, PageData } from './$types';
   import CheckoutStepper from '$lib/components/CheckoutStepper.svelte';
   import AddressDialog from '$lib/components/AddressDialog.svelte';
   import { formatIdr } from '$lib/shared/pricing';
-  import { MapPin, Plus, CheckCircle2, ArrowRight } from 'lucide-svelte';
+  import { MapPin, Plus, ArrowRight } from 'lucide-svelte';
   import { invalidateAll } from '$app/navigation';
 
   interface Props {
     data: PageData;
+    form?: ActionData;
   }
 
-  let { data }: Props = $props();
+  let { data, form }: Props = $props();
 
-  let selectedAddressId = $state(data.savedAddressId || data.addresses[0]?.id || '');
+  let selectedAddressId = $state('');
   let isAddDialogOpen = $state(false);
+
+  $effect(() => {
+    if (!selectedAddressId || !data.addresses.some((a) => a.id === selectedAddressId)) {
+      selectedAddressId = data.savedAddressId || data.addresses[0]?.id || '';
+    }
+  });
 
   function handleAddressAdded(newAddress: any) {
     selectedAddressId = newAddress.id;
@@ -37,6 +44,12 @@
       class="lg:col-span-8 rounded-[30px] sm:rounded-[40px] p-6 sm:p-10 border border-[#1A3551] shadow-2xl backdrop-blur-md space-y-6"
       style="background: rgba(26, 53, 81, 0.72);"
     >
+      {#if form?.message}
+        <div class="p-4 rounded-2xl bg-[#FF6D6F]/10 border border-[#FF6D6F]/40 text-[#FF6D6F] text-sm">
+          {form.message}
+        </div>
+      {/if}
+
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#CFF2FF]/10">
         <div>
           <h2 class="font-['Outfit'] font-bold text-2xl sm:text-[28px] text-[#CFF2FF]">
@@ -75,14 +88,15 @@
           </button>
         </div>
       {:else}
-        <div class="space-y-4">
+        <div role="radiogroup" aria-label="Installation addresses" class="space-y-4">
           {#each data.addresses as addr (addr.id)}
             {@const isSelected = selectedAddressId === addr.id}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
+            <button
+              type="button"
+              role="radio"
+              aria-checked={isSelected}
               onclick={() => (selectedAddressId = addr.id)}
-              class="relative cursor-pointer rounded-2xl p-5 border transition-all duration-200 {
+              class="w-full text-left relative cursor-pointer rounded-2xl p-5 border transition-all duration-200 {
                 isSelected
                   ? 'border-[#CFF2FF] bg-[#1A3551] shadow-lg ring-1 ring-[#CFF2FF]/40'
                   : 'border-[#1A3551] bg-[#071824]/40 hover:border-[#4A6FA5]/60 hover:bg-[#071824]/60'
@@ -128,7 +142,7 @@
 
                 <MapPin class="w-5 h-5 text-[#4A6FA5] shrink-0" />
               </div>
-            </div>
+            </button>
           {/each}
         </div>
       {/if}

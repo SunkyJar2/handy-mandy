@@ -49,6 +49,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     );
   }
 
+  const existingAddresses = await db.orm.public.Address
+    .where({ userId: locals.user.id })
+    .all();
+
+  let isDefault = parseResult.data.isDefault ?? false;
+  if (existingAddresses.length === 0) {
+    isDefault = true;
+  }
+
+  if (isDefault) {
+    await db.orm.public.Address
+      .where({ userId: locals.user.id })
+      .updateAll({ isDefault: false });
+  }
+
   const address = await db.orm.public.Address.create({
     userId: locals.user.id,
     province: parseResult.data.province,
@@ -57,7 +72,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     addressLine: parseResult.data.addressLine,
     postalCode: parseResult.data.postalCode,
     notes: parseResult.data.notes || null,
-    isDefault: parseResult.data.isDefault ?? false
+    isDefault
   });
 
   return json({

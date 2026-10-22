@@ -163,17 +163,24 @@
               Remove unavailable items before proceeding.
             </div>
           {/if}
-          <a
-            href={hasUnavailableItems ? '#' : '/checkout/location'}
-            class="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-[15px] font-['Outfit'] font-semibold text-lg text-white transition-all shadow-xl {
-              hasUnavailableItems
-                ? 'opacity-50 cursor-not-allowed bg-gray-600'
-                : 'bg-[#4A6FA5] hover:bg-[#5b84c0] hover:scale-[1.02] active:scale-[0.99]'
-            }"
-          >
-            <span>Proceed to checkout</span>
-            <ArrowRight class="w-5 h-5" />
-          </a>
+          {#if hasUnavailableItems}
+            <button
+              type="button"
+              disabled
+              class="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-[15px] font-['Outfit'] font-semibold text-lg text-white transition-all shadow-xl opacity-50 cursor-not-allowed bg-gray-600"
+            >
+              <span>Proceed to checkout</span>
+              <ArrowRight class="w-5 h-5" />
+            </button>
+          {:else}
+            <a
+              href="/checkout/location"
+              class="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-[15px] font-['Outfit'] font-semibold text-lg text-white transition-all shadow-xl bg-[#4A6FA5] hover:bg-[#5b84c0] hover:scale-[1.02] active:scale-[0.99]"
+            >
+              <span>Proceed to checkout</span>
+              <ArrowRight class="w-5 h-5" />
+            </a>
+          {/if}
         </div>
       </div>
     </div>

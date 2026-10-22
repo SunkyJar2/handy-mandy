@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import { formatIdr } from '$lib/shared/pricing';
+  import { formatIsoDateDisplay } from '$lib/shared/checkout';
   import { MapPin, Calendar, Clock, UserCheck, Wrench, ArrowRight, ShieldCheck } from 'lucide-svelte';
 
   interface Props {
@@ -11,16 +12,7 @@
 
   function formatDate(iso: string | null): string {
     if (!iso) return 'Pending Confirmation';
-    try {
-      const d = new Date(iso);
-      return d.toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch {
-      return iso;
-    }
+    return formatIsoDateDisplay(iso);
   }
 </script>
 
@@ -63,9 +55,23 @@
         </div>
       </div>
 
-      <div class="px-4 py-1.5 rounded-full bg-[#151447] border border-[#4A6FA5]/40 text-sm font-semibold text-[#25ED82] flex items-center gap-2">
+      <div
+        class="px-4 py-1.5 rounded-full bg-[#151447] border border-[#4A6FA5]/40 text-sm font-semibold {
+          data.order.status === 'CANCELLED'
+            ? 'text-[#FF6D6F]'
+            : data.order.status === 'PENDING_PAYMENT'
+              ? 'text-amber-400'
+              : 'text-[#25ED82]'
+        } flex items-center gap-2"
+      >
         <ShieldCheck class="w-4 h-4" />
-        <span>Paid & Verified</span>
+        <span>
+          {data.order.status === 'CANCELLED'
+            ? 'Cancelled'
+            : data.order.status === 'PENDING_PAYMENT'
+              ? 'Pending Payment'
+              : 'Paid & Verified'}
+        </span>
       </div>
     </div>
 
@@ -99,6 +105,14 @@
         >
           <span>Choose Technician</span>
           <ArrowRight class="w-4 h-4" />
+        </a>
+      {:else if data.order.status === 'ASSIGNED'}
+        <a
+          href="/technicians?orderId={data.order.id}"
+          class="px-4 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-medium text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5"
+        >
+          <span>Change Technician</span>
+          <ArrowRight class="w-3.5 h-3.5" />
         </a>
       {/if}
     </div>

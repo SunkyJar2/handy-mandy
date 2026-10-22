@@ -45,6 +45,8 @@
   }
 </script>
 
+<svelte:window onkeydown={(e) => { if (isOpen && e.key === 'Escape') onClose(); }} />
+
 {#if isOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -53,6 +55,10 @@
     onclick={onClose}
   >
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="snap-modal-title"
+      tabindex="-1"
       class="relative w-full max-w-md rounded-3xl p-6 sm:p-8 bg-[#0d1d30] border border-[#4A6FA5]/60 shadow-2xl text-white transition-all animate-in zoom-in-95 duration-200"
       onclick={(e) => e.stopPropagation()}
     >
@@ -63,7 +69,7 @@
             <ShieldCheck class="w-5 h-5 text-white" />
           </div>
           <div>
-            <div class="font-['Outfit'] font-bold text-lg text-white">Handy Mandy Pay</div>
+            <h2 id="snap-modal-title" class="font-['Outfit'] font-bold text-lg text-white">Handy Mandy Pay</h2>
             <div class="text-[11px] text-[#25ED82] font-medium tracking-wide">SECURE SANDBOX GATEWAY</div>
           </div>
         </div>

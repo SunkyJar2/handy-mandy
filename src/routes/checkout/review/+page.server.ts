@@ -4,6 +4,8 @@ import { db } from '$lib/server/db';
 import { toIsoDateTime } from '$lib/server/date';
 import { calculateQuote, INSTALL_FEE_PER_UNIT_IDR, HUB_PRICE_IDR } from '$lib/shared/pricing';
 import { getPaymentProvider } from '$lib/server/payment';
+import { parseCheckoutOptionsCookie } from '$lib/shared/checkout';
+import { validateActiveCartItems, nextOrderNumberFromMax } from '$lib/server/guards';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
   if (!locals.user) {
@@ -21,11 +23,11 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       .include('product')
       .all(),
     db.orm.public.Address
-      .where({ id: addressId })
+      .where({ id: addressId, userId: locals.user.id })
       .first()
   ]);
 
-  if (cartItems.length === 0) {
+  if (!validateActiveCartItems(cartItems)) {
     throw redirect(303, '/cart');
   }
   if (!address) {
@@ -33,12 +35,12 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
   }
 
   const savedOptionsRaw = cookies.get('hm_checkout_options');
-  const savedOptions = savedOptionsRaw ? JSON.parse(savedOptionsRaw) : {};
+  const savedOptions = parseCheckoutOptionsCookie(savedOptionsRaw);
 
-  const includeInstallation = savedOptions.includeInstallation ?? true;
-  const includeHub = savedOptions.includeHub ?? false;
-  const preferredDate = savedOptions.preferredDate ?? null;
-  const specialInstructions = savedOptions.specialInstructions ?? null;
+  const includeInstallation = savedOptions.includeInstallation;
+  const includeHub = savedOptions.includeHub;
+  const preferredDate = savedOptions.preferredDate;
+  const specialInstructions = savedOptions.specialInstructions;
 
   const quote = calculateQuote({
     items: cartItems.map((ci) => ({
@@ -89,23 +91,23 @@ export const actions: Actions = {
         .include('product')
         .all(),
       db.orm.public.Address
-        .where({ id: addressId })
+        .where({ id: addressId, userId: currentUser.id })
         .first()
     ]);
 
-    if (cartItems.length === 0) {
-      return fail(409, { message: 'Your cart is empty' });
+    if (!validateActiveCartItems(cartItems)) {
+      return fail(409, { message: 'Some items in your cart are no longer available. Please review your cart.' });
     }
     if (!address) {
       return fail(404, { message: 'Address not found' });
     }
 
     const savedOptionsRaw = cookies.get('hm_checkout_options');
-    const savedOptions = savedOptionsRaw ? JSON.parse(savedOptionsRaw) : {};
-    const includeInstallation = savedOptions.includeInstallation ?? true;
-    const includeHub = savedOptions.includeHub ?? false;
-    const preferredDate = savedOptions.preferredDate ? String(savedOptions.preferredDate).slice(0, 10) : null;
-    const specialInstructions = savedOptions.specialInstructions ?? null;
+    const savedOptions = parseCheckoutOptionsCookie(savedOptionsRaw);
+    const includeInstallation = savedOptions.includeInstallation;
+    const includeHub = savedOptions.includeHub;
+    const preferredDate = savedOptions.preferredDate;
+    const specialInstructions = savedOptions.specialInstructions;
 
     // Server authoritative recomputation
     const quote = calculateQuote({
@@ -124,18 +126,17 @@ export const actions: Actions = {
     const dd = String(now.getDate()).padStart(2, '0');
     const datePrefix = `HM-${yy}${mm}${dd}`;
 
-    let todayOrderCount = 0;
+    let existingOrderNumbers: string[] = [];
     try {
-      const agg = await db.orm.public.Order
+      const orders = await db.orm.public.Order
         .where((o) => o.orderNumber.like(`${datePrefix}%`))
-        .aggregate((a) => ({ count: a.count() }));
-      todayOrderCount = Number(agg.count ?? 0);
+        .all();
+      existingOrderNumbers = orders.map((o) => o.orderNumber);
     } catch {
-      todayOrderCount = 0;
+      existingOrderNumbers = [];
     }
 
-    const sequence = String(todayOrderCount + 1).padStart(4, '0');
-    const orderNumber = `${datePrefix}-${sequence}`;
+    const orderNumber = nextOrderNumberFromMax(datePrefix, existingOrderNumbers);
 
     // Create Order and OrderItems in a transaction
     const order = await db.transaction(async (tx) => {

@@ -3,11 +3,12 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { createSession, setSessionCookie } from '$lib/server/auth';
 import { loginSchema } from '$lib/shared/schemas';
+import { sanitizeNextUrl } from '$lib/shared/url';
 import bcrypt from 'bcryptjs';
 
 export const load: PageServerLoad = async ({ url }) => {
   return {
-    next: url.searchParams.get('next') || '/'
+    next: sanitizeNextUrl(url.searchParams.get('next'))
   };
 };
 
@@ -16,7 +17,7 @@ export const actions: Actions = {
     const formData = await request.formData();
     const email = String(formData.get('email') || '').trim();
     const password = String(formData.get('password') || '');
-    const nextUrl = url.searchParams.get('next') || '/';
+    const nextUrl = sanitizeNextUrl(url.searchParams.get('next'));
 
     const parseResult = loginSchema.safeParse({ email, password });
     if (!parseResult.success) {
@@ -48,8 +49,6 @@ export const actions: Actions = {
     const sessionId = await createSession(user.id);
     setSessionCookie(cookies, sessionId);
 
-    // Safe redirect guard
-    const safeNext = nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/';
-    throw redirect(303, safeNext);
+    throw redirect(303, nextUrl);
   }
 };

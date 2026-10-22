@@ -41,6 +41,11 @@
       if (!res.ok) {
         errorMessage = data.error?.message || 'Failed to save address.';
       } else {
+        district = '';
+        addressLine = '';
+        postalCode = '';
+        notes = '';
+        errorMessage = '';
         onSuccess(data.address);
         onClose();
       }
@@ -52,6 +57,8 @@
   }
 </script>
 
+<svelte:window onkeydown={(e) => { if (isOpen && e.key === 'Escape') onClose(); }} />
+
 {#if isOpen}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -60,12 +67,16 @@
     onclick={onClose}
   >
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="address-dialog-title"
+      tabindex="-1"
       class="relative w-full max-w-lg rounded-2xl p-6 sm:p-8 border border-[#4A6FA5]/40 shadow-2xl backdrop-blur-md transition-all animate-in zoom-in-95 duration-200"
       style="background: #1A3551;"
       onclick={(e) => e.stopPropagation()}
     >
       <div class="flex items-center justify-between pb-4 border-b border-[#CFF2FF]/10 mb-6">
-        <h2 class="font-['Outfit'] font-bold text-2xl text-[#CFF2FF]">
+        <h2 id="address-dialog-title" class="font-['Outfit'] font-bold text-2xl text-[#CFF2FF]">
           Add New Installation Address
         </h2>
         <button
@@ -135,6 +146,9 @@
               type="text"
               required
               placeholder="60872"
+              inputmode="numeric"
+              maxlength="5"
+              autocomplete="postal-code"
               pattern="^[0-9]&#123;5&#125;$"
               class="w-full h-10 px-3 rounded-lg bg-[#071824]/80 border border-[#CFF2FF]/30 text-white text-sm focus:outline-none focus:border-[#CFF2FF]"
             />
@@ -150,6 +164,7 @@
             bind:value={addressLine}
             type="text"
             required
+            autocomplete="street-address"
             placeholder="e.g. Gang Menanggal Harapan VII No. 12"
             class="w-full h-10 px-3 rounded-lg bg-[#071824]/80 border border-[#CFF2FF]/30 text-white text-sm focus:outline-none focus:border-[#CFF2FF]"
           />

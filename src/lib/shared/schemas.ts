@@ -60,14 +60,26 @@ export const checkoutOptionsSchema = z.object({
     .refine(
       (val) => {
         if (!val) return true;
-        const d = new Date(val);
-        if (isNaN(d.getTime())) return false;
-        // Not in the past
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return d >= today;
+        const parts = val.split('-');
+        if (parts.length < 3) return false;
+        const y = Number(parts[0]);
+        const m = Number(parts[1]);
+        const d = Number(parts[2].slice(0, 2));
+        if (isNaN(y) || isNaN(m) || isNaN(d)) return false;
+        const target = new Date(y, m - 1, d);
+        if (isNaN(target.getTime())) return false;
+
+        const tomorrow = new Date();
+        tomorrow.setHours(0, 0, 0, 0);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const maxDate = new Date();
+        maxDate.setHours(23, 59, 59, 999);
+        maxDate.setDate(maxDate.getDate() + 60);
+
+        return target >= tomorrow && target <= maxDate;
       },
-      { message: 'Preferred installation date must be tomorrow or later.' }
+      { message: 'Preferred installation date must be between tomorrow and 60 days ahead.' }
     ),
   specialInstructions: z.string().trim().max(500, 'Special instructions cannot exceed 500 characters.').optional().nullable()
 });
@@ -85,3 +97,32 @@ export const adminProductSchema = z.object({
   isFeatured: z.boolean().optional().default(false),
   kind: z.enum(['DEVICE', 'ADDON']).default('DEVICE')
 });
+
+export const adminProductPatchSchema = z
+  .object({
+    name: z.string().trim().min(2, 'Product name is required.').max(80).optional(),
+    description: z.string().trim().min(10, 'Description must be at least 10 characters.').max(500).optional(),
+    priceIdr: z.coerce.number().int().min(1000, 'Price must be at least Rp 1.000').max(100000000).optional(),
+    categoryId: z.string().min(1, 'Category is required.').optional(),
+    imageUrl: z.string().trim().min(1, 'Image URL or path is required.').optional(),
+    isFeatured: z.boolean().optional(),
+    kind: z.enum(['DEVICE', 'ADDON']).optional(),
+    status: z.enum(['ACTIVE', 'INACTIVE']).optional()
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided for update.'
+  });
+
+export function resolveCategoryIdBySlug(
+  categories: Array<{ id: string; slug: string }>,
+  selectedSlug: string | null | undefined
+): { matched: boolean; categoryId: string | undefined } {
+  if (!selectedSlug) {
+    return { matched: true, categoryId: undefined };
+  }
+  const found = categories.find((c) => c.slug === selectedSlug);
+  if (found) {
+    return { matched: true, categoryId: found.id };
+  }
+  return { matched: false, categoryId: undefined };
+}

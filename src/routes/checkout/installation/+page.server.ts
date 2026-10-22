@@ -1,8 +1,11 @@
-import { redirect, type Actions } from '@sveltejs/kit';
+import { redirect, fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { toIsoDateTime } from '$lib/server/date';
 import { calculateQuote } from '$lib/shared/pricing';
+import { parseCheckoutOptionsCookie } from '$lib/shared/checkout';
+import { checkoutOptionsSchema } from '$lib/shared/schemas';
+import { validateActiveCartItems } from '$lib/server/guards';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
   if (!locals.user) {
@@ -20,11 +23,11 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       .include('product')
       .all(),
     db.orm.public.Address
-      .where({ id: addressId })
+      .where({ id: addressId, userId: locals.user.id })
       .first()
   ]);
 
-  if (cartItems.length === 0) {
+  if (!validateActiveCartItems(cartItems)) {
     throw redirect(303, '/cart');
   }
   if (!address) {
@@ -33,11 +36,11 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 
   // Load existing options from cookies or defaults
   const savedOptionsRaw = cookies.get('hm_checkout_options');
-  const savedOptions = savedOptionsRaw ? JSON.parse(savedOptionsRaw) : {};
+  const savedOptions = parseCheckoutOptionsCookie(savedOptionsRaw);
 
-  const includeInstallation = savedOptions.includeInstallation ?? true;
-  const includeHub = savedOptions.includeHub ?? false;
-  const preferredDate = savedOptions.preferredDate ?? null;
+  const includeInstallation = savedOptions.includeInstallation;
+  const includeHub = savedOptions.includeHub;
+  const preferredDate = savedOptions.preferredDate;
   const specialInstructions = savedOptions.specialInstructions ?? '';
 
   const quote = calculateQuote({
@@ -79,14 +82,22 @@ export const actions: Actions = {
     const preferredDate = String(formData.get('preferredDate') || '') || null;
     const specialInstructions = String(formData.get('specialInstructions') || '').trim() || null;
 
+    const parseResult = checkoutOptionsSchema.safeParse({
+      includeInstallation,
+      includeHub,
+      preferredDate,
+      specialInstructions
+    });
+
+    if (!parseResult.success) {
+      return fail(422, {
+        message: parseResult.error.issues[0]?.message || 'Invalid checkout options.'
+      });
+    }
+
     cookies.set(
       'hm_checkout_options',
-      JSON.stringify({
-        includeInstallation,
-        includeHub,
-        preferredDate,
-        specialInstructions
-      }),
+      JSON.stringify(parseResult.data),
       {
         path: '/',
         httpOnly: true,

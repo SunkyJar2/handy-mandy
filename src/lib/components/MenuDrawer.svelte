@@ -12,6 +12,8 @@
   let { isOpen, user, cartCount, onClose }: Props = $props();
 </script>
 
+<svelte:window onkeydown={(e) => { if (isOpen && e.key === 'Escape') onClose(); }} />
+
 {#if isOpen}
   <!-- Backdrop -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -22,14 +24,18 @@
   ></div>
 
   <!-- Drawer -->
-  <aside
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="menu-drawer-title"
+    tabindex="-1"
     class="fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-[#0c1c2e] border-l border-[#4A6FA5]/40 p-6 flex flex-col justify-between shadow-2xl transition-transform animate-in slide-in-from-right duration-300"
   >
     <div class="space-y-6">
       <div class="flex items-center justify-between pb-4 border-b border-[#1A3551]">
         <div class="flex items-center gap-3">
           <img src="/images/logo.svg" alt="Handy Mandy" class="w-10 h-10 object-contain" />
-          <span class="text-xl font-bold tracking-tight text-white font-['Outfit']">Handy Mandy</span>
+          <span id="menu-drawer-title" class="text-xl font-bold tracking-tight text-white font-['Outfit']">Handy Mandy</span>
         </div>
         <button
           onclick={onClose}
@@ -142,5 +148,5 @@
         </div>
       {/if}
     </div>
-  </aside>
+  </div>
 {/if}

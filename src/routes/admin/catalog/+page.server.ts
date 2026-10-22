@@ -72,7 +72,8 @@ export const actions: Actions = {
     const nextStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
     await db.orm.public.Product.where({ id: productId }).update({
-      status: nextStatus as any
+      status: nextStatus as any,
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now())
     });
 
     return { success: true };

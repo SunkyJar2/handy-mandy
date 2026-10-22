@@ -2,6 +2,7 @@ import { redirect, fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import type { TechnicianDto } from '$lib/shared/types';
+import { canAssignTechnician } from '$lib/server/guards';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
   if (!locals.user) {
@@ -13,7 +14,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 
   if (orderId) {
     targetOrder = await db.orm.public.Order.where({ id: orderId }).first();
-    if (!targetOrder || targetOrder.userId !== locals.user.id) {
+    if (!targetOrder || targetOrder.userId !== locals.user.id || !canAssignTechnician(targetOrder.status)) {
       targetOrder = null;
     }
   }
@@ -24,6 +25,10 @@ export const load: PageServerLoad = async ({ url, locals }) => {
       .where({ userId: locals.user.id, status: 'PENDING_ASSIGNMENT' })
       .orderBy((o) => o.createdAt.desc())
       .first();
+  }
+
+  if (targetOrder && !canAssignTechnician(targetOrder.status)) {
+    targetOrder = null;
   }
 
   const technicians = await db.orm.public.Technician
@@ -74,6 +79,10 @@ export const actions: Actions = {
 
     if (!order || order.userId !== locals.user.id) {
       return fail(404, { message: 'Booking not found.' });
+    }
+
+    if (!canAssignTechnician(order.status as any)) {
+      return fail(409, { message: 'Order cannot be assigned a technician in its current status.' });
     }
 
     const technician = await db.orm.public.Technician.where({ id: technicianId }).first();

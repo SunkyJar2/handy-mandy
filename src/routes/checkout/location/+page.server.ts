@@ -2,6 +2,7 @@ import { redirect, fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { toIsoDateTime } from '$lib/server/date';
+import { validateActiveCartItems, resolveUserAddressId } from '$lib/server/guards';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
   if (!locals.user) {
@@ -19,7 +20,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       .all()
   ]);
 
-  if (cartItems.length === 0) {
+  if (!validateActiveCartItems(cartItems)) {
     throw redirect(303, '/cart');
   }
 
@@ -45,7 +46,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     }))
     .sort((a, b) => (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0));
 
-  const savedAddressId = cookies.get('hm_checkout_address') || mappedAddresses[0]?.id || '';
+  const savedAddressId = resolveUserAddressId(cookies.get('hm_checkout_address'), mappedAddresses);
 
   return {
     cartItems: cartItems
@@ -67,12 +68,25 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 };
 
 export const actions: Actions = {
-  selectAddress: async ({ request, cookies }) => {
+  selectAddress: async ({ request, cookies, locals }) => {
+    if (!locals.user) {
+      return fail(401, { message: 'Unauthorized' });
+    }
+
     const formData = await request.formData();
     const addressId = String(formData.get('addressId') || '');
 
     if (!addressId) {
       return fail(400, { message: 'Please select an installation address.' });
+    }
+
+    const address = await db.orm.public.Address.where({
+      id: addressId,
+      userId: locals.user.id
+    }).first();
+
+    if (!address) {
+      return fail(404, { message: 'Selected address not found.' });
     }
 
     cookies.set('hm_checkout_address', addressId, {

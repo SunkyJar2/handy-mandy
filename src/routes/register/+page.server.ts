@@ -1,9 +1,16 @@
 import { fail, redirect } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { createSession, setSessionCookie } from '$lib/server/auth';
 import { registerSchema } from '$lib/shared/schemas';
+import { sanitizeNextUrl } from '$lib/shared/url';
 import bcrypt from 'bcryptjs';
+
+export const load: PageServerLoad = async ({ url }) => {
+  return {
+    next: sanitizeNextUrl(url.searchParams.get('next'))
+  };
+};
 
 export const actions: Actions = {
   default: async ({ request, cookies, url }) => {
@@ -12,7 +19,7 @@ export const actions: Actions = {
     const email = String(formData.get('email') || '').trim().toLowerCase();
     const phone = String(formData.get('phone') || '').trim() || undefined;
     const password = String(formData.get('password') || '');
-    const nextUrl = url.searchParams.get('next') || '/';
+    const nextUrl = sanitizeNextUrl(url.searchParams.get('next'));
 
     const parseResult = registerSchema.safeParse({
       fullName,
@@ -66,7 +73,6 @@ export const actions: Actions = {
     const sessionId = await createSession(user.id);
     setSessionCookie(cookies, sessionId);
 
-    const safeNext = nextUrl.startsWith('/') && !nextUrl.startsWith('//') ? nextUrl : '/';
-    throw redirect(303, safeNext);
+    throw redirect(303, nextUrl);
   }
 };

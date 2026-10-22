@@ -21,7 +21,7 @@
       try {
         sessionStorage.setItem('pendingCartProduct', JSON.stringify(product));
       } catch {}
-      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
       return;
     }
 

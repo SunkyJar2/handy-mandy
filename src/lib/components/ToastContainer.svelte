@@ -3,7 +3,12 @@
   import { CheckCircle2, AlertCircle, Info, X } from 'lucide-svelte';
 </script>
 
-<div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 max-w-md pointer-events-none">
+<div
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+  class="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 max-w-md pointer-events-none"
+>
   {#each toast.toasts as item (item.id)}
     <div
       class="pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-xl transition-all duration-200 animate-in fade-in slide-in-from-bottom-2 {

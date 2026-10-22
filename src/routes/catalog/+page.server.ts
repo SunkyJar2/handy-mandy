@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import type { ProductDto, CategoryDto } from '$lib/shared/types';
+import { resolveCategoryIdBySlug } from '$lib/shared/schemas';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
   const selectedCategory = url.searchParams.get('category');
@@ -8,12 +9,23 @@ export const load: PageServerLoad = async ({ url, locals }) => {
   try {
     const categories = await db.orm.public.Category.orderBy((c) => c.sortOrder.asc()).all();
 
-    let categoryId: string | undefined;
-    if (selectedCategory) {
-      const foundCat = categories.find((c) => c.slug === selectedCategory);
-      if (foundCat) {
-        categoryId = foundCat.id;
-      }
+    const mappedCategories: CategoryDto[] = categories.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.name,
+      sortOrder: c.sortOrder
+    }));
+
+    const { matched, categoryId } = resolveCategoryIdBySlug(categories, selectedCategory);
+
+    if (!matched) {
+      return {
+        products: [],
+        categories: mappedCategories,
+        selectedCategory,
+        user: locals.user,
+        dbConnected: true
+      };
     }
 
     let productQuery = db.orm.public.Product.where({ status: 'ACTIVE' });
@@ -43,13 +55,6 @@ export const load: PageServerLoad = async ({ url, locals }) => {
         name: p.category.name,
         sortOrder: p.category.sortOrder
       }
-    }));
-
-    const mappedCategories: CategoryDto[] = categories.map((c) => ({
-      id: c.id,
-      slug: c.slug,
-      name: c.name,
-      sortOrder: c.sortOrder
     }));
 
     return {

@@ -199,9 +199,13 @@
               { label: 'Camera', url: '/images/product-camera.jpg' },
               { label: 'Doorbell', url: '/images/product-doorbell.jpg' },
               { label: 'Bulb', url: '/images/product-bulb.jpg' },
+              { label: 'LED Strip', url: '/images/product-led-strip.jpg' },
               { label: 'Sensor', url: '/images/product-motion-sensor.jpg' },
               { label: 'Switch', url: '/images/product-switch.jpg' },
-              { label: 'Soundbar', url: '/images/product-soundbar.jpg' }
+              { label: 'Dimmer', url: '/images/product-dimmer-module.jpg' },
+              { label: 'Soundbar', url: '/images/product-soundbar.jpg' },
+              { label: 'Speaker', url: '/images/product-ceiling-speaker.jpg' },
+              { label: 'Amplifier', url: '/images/product-amplifier.jpg' }
             ] as preset}
               <button
                 type="button"

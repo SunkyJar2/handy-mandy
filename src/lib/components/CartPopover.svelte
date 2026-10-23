@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { cartStore } from '$lib/stores/cart.svelte';
   import { formatIdr } from '$lib/shared/pricing';
   import { X, Minus, Plus, Trash2, ArrowRight, ShoppingBag } from 'lucide-svelte';
@@ -11,8 +12,12 @@
   // Close when navigating to /cart or /checkout
   $effect(() => {
     const path = page.url.pathname;
-    if (cartStore.isOpen && (path === '/cart' || path.startsWith('/checkout'))) {
-      cartStore.close();
+    if (path === '/cart' || path.startsWith('/checkout')) {
+      untrack(() => {
+        if (cartStore.isOpen) {
+          cartStore.close();
+        }
+      });
     }
   });
 
@@ -51,8 +56,8 @@
     transition:fly={{ y: 20, duration: 220, easing: cubicOut }}
     class="fixed z-50 overflow-hidden flex flex-col justify-between border border-[#CFF2FF]/20 shadow-[0_24px_60px_rgba(0,0,0,0.65)]
       inset-x-0 bottom-0 max-h-[85dvh] rounded-t-[36px]
-      sm:inset-x-auto sm:right-6 sm:bottom-auto sm:w-[428px] sm:max-h-[min(620px,calc(100dvh-7rem))] sm:rounded-[40px]
-      {cartStore.anchor === 'nav' ? 'sm:top-24' : 'sm:bottom-28'}"
+      sm:inset-x-auto sm:right-6 sm:w-[428px] sm:max-h-[min(620px,calc(100dvh-7rem))] sm:rounded-[40px]
+      {cartStore.anchor === 'nav' ? 'sm:top-24 sm:bottom-auto' : 'sm:bottom-28 sm:top-auto'}"
     style="background: linear-gradient(180deg, rgba(60, 66, 104, 0.96) 44%, rgba(72, 80, 117, 0.98) 92%); backdrop-filter: blur(24px);"
   >
     <!-- Header matching Figma #197:514, #197:521, #197:436 -->

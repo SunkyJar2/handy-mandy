@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { enhance } from '$app/forms';
   import type { ActionData, PageData } from './$types';
   import { formatIdr } from '$lib/shared/pricing';
@@ -17,19 +18,28 @@
   let selectedIds = $state<Set<string>>(new Set());
 
   $effect(() => {
-    // Sync newly loaded available items
-    const availableItemIds = data.items.filter((i) => i.available).map((i) => i.id);
-    if (selectedIds.size === 0 && availableItemIds.length > 0) {
-      selectedIds = new Set(availableItemIds);
-    } else {
-      // Clean up removed IDs
-      const currentIds = new Set(data.items.map((i) => i.id));
+    const items = data.items;
+    untrack(() => {
+      const currentIds = new Set(items.map((i) => i.id));
+      let changed = false;
       const nextSet = new Set<string>();
       for (const id of selectedIds) {
-        if (currentIds.has(id)) nextSet.add(id);
+        if (currentIds.has(id)) {
+          nextSet.add(id);
+        } else {
+          changed = true;
+        }
       }
-      selectedIds = nextSet;
-    }
+      if (nextSet.size === 0 && items.length > 0) {
+        for (const item of items) {
+          if (item.available) nextSet.add(item.id);
+        }
+        changed = true;
+      }
+      if (changed) {
+        selectedIds = nextSet;
+      }
+    });
   });
 
   let totals = $derived(computeSelectedCartTotals(data.items, selectedIds));

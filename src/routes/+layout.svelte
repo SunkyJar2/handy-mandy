@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import './layout.css';
   import type { LayoutProps } from './$types';
   import TopNav from '$lib/components/TopNav.svelte';
@@ -23,7 +24,10 @@
 
   // Hydrate cartStore whenever data changes
   $effect(() => {
-    cartStore.hydrate(data.cart);
+    const cart = data.cart;
+    untrack(() => {
+      cartStore.hydrate(cart);
+    });
   });
 
   $effect(() => {

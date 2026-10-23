@@ -6,6 +6,7 @@ import { calculateQuote, INSTALL_FEE_PER_UNIT_IDR, HUB_PRICE_IDR } from '$lib/sh
 import { getPaymentProvider } from '$lib/server/payment';
 import { parseCheckoutOptionsCookie } from '$lib/shared/checkout';
 import { validateActiveCartItems, nextOrderNumberFromMax } from '$lib/server/guards';
+import { parseSelectedCartItemIds, filterCheckoutCartItems } from '$lib/shared/cart-selection';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
   if (!locals.user) {
@@ -17,7 +18,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     throw redirect(303, '/checkout/location');
   }
 
-  const [cartItems, address] = await Promise.all([
+  const [rawCartItems, address] = await Promise.all([
     db.orm.public.CartItem
       .where({ userId: locals.user.id })
       .include('product')
@@ -26,6 +27,9 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       .where({ id: addressId, userId: locals.user.id })
       .first()
   ]);
+
+  const selectedIds = parseSelectedCartItemIds(cookies.get('hm_checkout_items'));
+  const cartItems = filterCheckoutCartItems(rawCartItems, selectedIds);
 
   if (!validateActiveCartItems(cartItems)) {
     throw redirect(303, '/cart');
@@ -44,7 +48,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 
   const quote = calculateQuote({
     items: cartItems.map((ci) => ({
-      priceIdr: ci.product.priceIdr,
+      priceIdr: ci.product!.priceIdr,
       quantity: ci.quantity
     })),
     includeInstallation,
@@ -55,6 +59,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     address: {
       id: address.id,
       userId: address.userId,
+      label: address.label ?? null,
       province: address.province,
       city: address.city,
       district: address.district,
@@ -85,7 +90,7 @@ export const actions: Actions = {
       return fail(400, { message: 'Missing installation address' });
     }
 
-    const [cartItems, address] = await Promise.all([
+    const [rawCartItems, address] = await Promise.all([
       db.orm.public.CartItem
         .where({ userId: currentUser.id })
         .include('product')
@@ -94,6 +99,9 @@ export const actions: Actions = {
         .where({ id: addressId, userId: currentUser.id })
         .first()
     ]);
+
+    const selectedIds = parseSelectedCartItemIds(cookies.get('hm_checkout_items'));
+    const cartItems = filterCheckoutCartItems(rawCartItems, selectedIds);
 
     if (!validateActiveCartItems(cartItems)) {
       return fail(409, { message: 'Some items in your cart are no longer available. Please review your cart.' });
@@ -112,7 +120,7 @@ export const actions: Actions = {
     // Server authoritative recomputation
     const quote = calculateQuote({
       items: cartItems.map((ci) => ({
-        priceIdr: ci.product.priceIdr,
+        priceIdr: ci.product!.priceIdr,
         quantity: ci.quantity
       })),
       includeInstallation,
@@ -145,6 +153,7 @@ export const actions: Actions = {
         userId: currentUser.id,
         addressId: address.id,
         addressSnapshot: {
+          label: address.label ?? null,
           province: address.province,
           city: address.city,
           district: address.district,

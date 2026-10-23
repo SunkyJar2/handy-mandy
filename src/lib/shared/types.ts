@@ -104,6 +104,7 @@ export interface CartResponse {
 
 export interface AddressDto {
   id: Id;
+  label?: string | null;
   province: string;
   city: string;
   district: string;

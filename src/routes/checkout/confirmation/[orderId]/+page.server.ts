@@ -10,6 +10,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   const order = await db.orm.public.Order
     .where({ id: params.orderId })
     .include('technician')
+    .include('items')
     .first();
 
   if (!order || order.userId !== locals.user.id) {
@@ -26,7 +27,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
       orderNumber: order.orderNumber,
       status: order.status,
       totalIdr: order.totalIdr,
-      technicianId: order.technicianId
+      technicianId: order.technicianId,
+      lines: order.items.map((i) => ({
+        id: i.id,
+        lineType: i.lineType,
+        nameSnapshot: i.nameSnapshot,
+        unitPriceIdr: i.unitPriceIdr,
+        quantity: i.quantity,
+        lineTotalIdr: i.lineTotalIdr
+      }))
     }
   };
 };

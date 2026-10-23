@@ -97,6 +97,13 @@
                   "kind": "scalar"
                 }
               },
+              "label": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "notes": {
                 "nullable": true,
                 "type": {
@@ -178,6 +185,9 @@
                 },
                 "isDefault": {
                   "column": "isDefault"
+                },
+                "label": {
+                  "column": "label"
                 },
                 "notes": {
                   "column": "notes"
@@ -1597,6 +1607,11 @@
                   },
                   "nullable": false
                 },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "notes": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -2756,7 +2771,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "be81d3d97e3b96ec42b375ddac8f238cf5f11c4f3d192a88c21c916c814f853e"
+    "storageHash": "1e76a9b9a7680bf429bd3e5d76f0c6c23ec1c24affcbdf9313e93f1875b8f07e"
   },
   "execution": {
     "executionHash": "b7119534afe6e7e162d9eff769d74b57b493d9ab9db3ae6691eff4d0fed5fcbc",

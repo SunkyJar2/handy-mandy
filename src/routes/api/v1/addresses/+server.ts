@@ -16,6 +16,7 @@ export const GET: RequestHandler = async ({ locals }) => {
   const mapped = addresses.map((a) => ({
     id: a.id,
     userId: a.userId,
+    label: a.label ?? null,
     province: a.province,
     city: a.city,
     district: a.district,
@@ -66,6 +67,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
   const address = await db.orm.public.Address.create({
     userId: locals.user.id,
+    label: parseResult.data.label || null,
     province: parseResult.data.province,
     city: parseResult.data.city,
     district: parseResult.data.district,
@@ -80,6 +82,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     address: {
       id: address.id,
       userId: address.userId,
+      label: address.label ?? null,
       province: address.province,
       city: address.city,
       district: address.district,

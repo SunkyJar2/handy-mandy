@@ -2,14 +2,15 @@ import { redirect, fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { toIsoDateTime } from '$lib/server/date';
-import { validateActiveCartItems, resolveUserAddressId } from '$lib/server/guards';
+import { resolveUserAddressId } from '$lib/server/guards';
+import { parseSelectedCartItemIds, filterCheckoutCartItems } from '$lib/shared/cart-selection';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
   if (!locals.user) {
     throw redirect(303, '/login?next=/checkout/location');
   }
 
-  const [cartItems, addresses] = await Promise.all([
+  const [rawCartItems, addresses] = await Promise.all([
     db.orm.public.CartItem
       .where({ userId: locals.user.id })
       .include('product')
@@ -20,7 +21,10 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       .all()
   ]);
 
-  if (!validateActiveCartItems(cartItems)) {
+  const selectedIds = parseSelectedCartItemIds(cookies.get('hm_checkout_items'));
+  const cartItems = filterCheckoutCartItems(rawCartItems, selectedIds);
+
+  if (cartItems.length === 0) {
     throw redirect(303, '/cart');
   }
 
@@ -35,6 +39,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     .map((a) => ({
       id: a.id,
       userId: a.userId,
+      label: a.label ?? null,
       province: a.province,
       city: a.city,
       district: a.district,

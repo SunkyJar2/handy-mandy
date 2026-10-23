@@ -3,6 +3,7 @@
 @theme {
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-serif: 'Italiana', serif;
+  --font-jakarta: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   --color-hm-primary: #4A6FA5;
   --color-hm-primary-trans: rgba(74, 111, 165, 0.26);
@@ -18,6 +19,11 @@
   --color-hm-bg-indigo: #151447;
   --color-hm-success: #25ED82;
   --color-hm-danger: #FF6D6F;
+  --color-hm-cyan: #00FBFF;
+  --color-hm-search-bg: #272E5A;
+  --color-hm-search-border: #4C527D;
+  --color-hm-popover-from: rgba(60, 66, 104, 0.94);
+  --color-hm-popover-to: rgba(72, 80, 117, 0.96);
   --color-hm-outline: rgba(207, 242, 255, 0.3);
 
   --shadow-hm-card: 0px 2px 2.8px 0px rgba(0, 0, 0, 0.25);

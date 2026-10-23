@@ -1,21 +1,25 @@
 import type { LayoutServerLoad } from './$types';
-import { db } from '$lib/server/db';
+import { loadUserCart } from '$lib/server/cart';
+import type { CartResponse } from '$lib/shared/types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
-  let cartCount = 0;
+  let cart: CartResponse = {
+    items: [],
+    subtotalIdr: 0,
+    itemCount: 0
+  };
 
   if (locals.user) {
     try {
-      const agg = await db.orm.public.CartItem.where({ userId: locals.user.id })
-        .aggregate((a) => ({ count: a.count() }));
-      cartCount = Number(agg.count ?? 0);
+      cart = await loadUserCart(locals.user.id);
     } catch {
-      cartCount = 0;
+      cart = { items: [], subtotalIdr: 0, itemCount: 0 };
     }
   }
 
   return {
     user: locals.user,
-    cartCount
+    cartCount: cart.itemCount,
+    cart
   };
 };

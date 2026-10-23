@@ -58,12 +58,27 @@ export const POST: RequestHandler = async ({ request, locals, cookies }) => {
       status: 'PAID'
     });
 
-    // Clear user cart
-    await tx.orm.public.CartItem.where({ userId: locals.user!.id }).deleteAll();
+    // Selectively clear purchased products from user cart
+    const purchasedItems = await tx.orm.public.OrderItem
+      .where({ orderId, lineType: 'DEVICE' })
+      .all();
+
+    const productIds = purchasedItems
+      .map((oi) => oi.productId)
+      .filter((id): id is string => Boolean(id));
+
+    if (productIds.length > 0) {
+      for (const pid of productIds) {
+        await tx.orm.public.CartItem.where({ userId: locals.user!.id, productId: pid }).deleteAll();
+      }
+    } else {
+      await tx.orm.public.CartItem.where({ userId: locals.user!.id }).deleteAll();
+    }
   });
 
   cookies.delete('hm_checkout_address', { path: '/' });
   cookies.delete('hm_checkout_options', { path: '/' });
+  cookies.delete('hm_checkout_items', { path: '/' });
 
   return json({
     success: true,

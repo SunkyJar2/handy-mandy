@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'be81d3d97e3b96ec42b375ddac8f238cf5f11c4f3d192a88c21c916c814f853e'>;
+  StorageHashBase<'1e76a9b9a7680bf429bd3e5d76f0c6c23ec1c24affcbdf9313e93f1875b8f07e'>;
 export type ExecutionHash =
   ExecutionHashBase<'b7119534afe6e7e162d9eff769d74b57b493d9ab9db3ae6691eff4d0fed5fcbc'>;
 export type ProfileHash =
@@ -241,6 +241,7 @@ export type FieldOutputTypes = {
       readonly district: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly isDefault: CodecTypes['pg/bool@1']['output'];
+      readonly label: CodecTypes['pg/text@1']['output'] | null;
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
       readonly postalCode: CodecTypes['pg/text@1']['output'];
       readonly province: CodecTypes['pg/text@1']['output'];
@@ -364,6 +365,7 @@ export type FieldInputTypes = {
       readonly district: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly isDefault: CodecTypes['pg/bool@1']['input'];
+      readonly label: CodecTypes['pg/text@1']['input'] | null;
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
       readonly postalCode: CodecTypes['pg/text@1']['input'];
       readonly province: CodecTypes['pg/text@1']['input'];
@@ -487,6 +489,7 @@ export type StorageColumnTypes = {
       readonly district: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly isDefault: CodecTypes['pg/bool@1']['output'];
+      readonly label: CodecTypes['pg/text@1']['output'] | null;
       readonly notes: CodecTypes['pg/text@1']['output'] | null;
       readonly postalCode: CodecTypes['pg/text@1']['output'];
       readonly province: CodecTypes['pg/text@1']['output'];
@@ -610,6 +613,7 @@ export type StorageColumnInputTypes = {
       readonly district: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly isDefault: CodecTypes['pg/bool@1']['input'];
+      readonly label: CodecTypes['pg/text@1']['input'] | null;
       readonly notes: CodecTypes['pg/text@1']['input'] | null;
       readonly postalCode: CodecTypes['pg/text@1']['input'];
       readonly province: CodecTypes['pg/text@1']['input'];
@@ -733,6 +737,7 @@ export namespace Models {
     district: CodecTypes['pg/text@1']['output'];
     id: CodecTypes['pg/text@1']['output'];
     isDefault: CodecTypes['pg/bool@1']['output'];
+    label: CodecTypes['pg/text@1']['output'] | null;
     notes: CodecTypes['pg/text@1']['output'] | null;
     postalCode: CodecTypes['pg/text@1']['output'];
     province: CodecTypes['pg/text@1']['output'];
@@ -957,6 +962,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', false>;
                   };
+                  readonly many: false;
+                };
+                readonly label: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly notes: {
@@ -1980,6 +1991,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly label: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly notes: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -2029,6 +2044,7 @@ type ContractBase = Omit<
                 readonly district: { readonly column: 'district' };
                 readonly id: { readonly column: 'id' };
                 readonly isDefault: { readonly column: 'isDefault' };
+                readonly label: { readonly column: 'label' };
                 readonly notes: { readonly column: 'notes' };
                 readonly postalCode: { readonly column: 'postalCode' };
                 readonly province: { readonly column: 'province' };

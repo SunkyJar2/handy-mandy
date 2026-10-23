@@ -1,15 +1,18 @@
 <script lang="ts">
   import type { UserDto } from '$lib/shared/types';
+  import { cartStore } from '$lib/stores/cart.svelte';
   import { X, ShoppingBag, ShoppingCart, Calendar, Users, Settings, LogOut, LogIn, UserPlus } from 'lucide-svelte';
+  import { fade, fly } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
 
   interface Props {
     isOpen: boolean;
     user: UserDto | null;
-    cartCount: number;
+    cartCount?: number;
     onClose: () => void;
   }
 
-  let { isOpen, user, cartCount, onClose }: Props = $props();
+  let { isOpen, user, onClose }: Props = $props();
 </script>
 
 <svelte:window onkeydown={(e) => { if (isOpen && e.key === 'Escape') onClose(); }} />
@@ -19,17 +22,19 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
+    transition:fade={{ duration: 180 }}
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
     onclick={onClose}
   ></div>
 
-  <!-- Drawer -->
+  <!-- Drawer: Slides from the Left to match left Hamburger button -->
   <div
     role="dialog"
     aria-modal="true"
     aria-labelledby="menu-drawer-title"
     tabindex="-1"
-    class="fixed top-0 right-0 z-50 h-full w-80 max-w-[85vw] bg-[#0c1c2e] border-l border-[#4A6FA5]/40 p-6 flex flex-col justify-between shadow-2xl transition-transform animate-in slide-in-from-right duration-300"
+    transition:fly={{ x: -320, duration: 240, easing: cubicOut }}
+    class="fixed top-0 left-0 z-50 h-full w-80 max-w-[85vw] bg-[#0c1c2e] border-r border-[#4A6FA5]/40 p-6 flex flex-col justify-between shadow-2xl"
   >
     <div class="space-y-6">
       <div class="flex items-center justify-between pb-4 border-b border-[#1A3551]">
@@ -76,9 +81,9 @@
             <ShoppingCart class="w-5 h-5 text-[#4A6FA5]" />
             <span>Cart</span>
           </div>
-          {#if cartCount > 0}
-            <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-[#4A6FA5] text-white">
-              {cartCount}
+          {#if cartStore.itemCount > 0}
+            <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-[#4A6FA5] text-white tabular-nums">
+              {cartStore.itemCount}
             </span>
           {/if}
         </a>

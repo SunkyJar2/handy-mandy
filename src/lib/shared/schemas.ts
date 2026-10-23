@@ -34,6 +34,7 @@ export const loginSchema = z.object({
 });
 
 export const addressSchema = z.object({
+  label: z.string().trim().max(50, 'Label cannot exceed 50 characters.').optional().nullable(),
   province: z.string().trim().min(2, 'Province is required.').max(100),
   city: z
     .string()
@@ -48,6 +49,15 @@ export const addressSchema = z.object({
   postalCode: z.string().trim().regex(/^\d{5}$/, 'Postal code must be 5 digits.'),
   notes: z.string().trim().max(200, 'Notes cannot exceed 200 characters.').optional().nullable(),
   isDefault: z.boolean().optional().default(false)
+});
+
+export const cartItemQuantitySchema = z.object({
+  quantity: z.coerce.number().int().min(0, 'Quantity cannot be negative.').max(99, 'Max 99 units per item.')
+});
+
+export const quickAddressSchema = z.object({
+  label: z.string().trim().min(1, 'Name is required.').max(50, 'Name is too long.'),
+  rawAddress: z.string().trim().min(5, 'Enter a valid address.').max(240, 'Address is too long.')
 });
 
 export const checkoutOptionsSchema = z.object({

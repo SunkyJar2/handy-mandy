@@ -78,6 +78,7 @@ model Session {
 model Address {
   id          String   @id @default(cuid())
   userId      String
+  label       String?  @db.VarChar(50)
   province    String   @db.VarChar(100)
   city        String   @db.VarChar(100)
   district    String   @db.VarChar(100)

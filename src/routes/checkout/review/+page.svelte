@@ -48,7 +48,7 @@
     <!-- Left Main Column (col-span-8) -->
     <div class="lg:col-span-8 space-y-6">
       <h2 class="font-['Outfit'] font-bold text-2xl sm:text-[32px] text-[#CFF2FF] mb-2">
-        1. Review & Complete Payment
+        3. Review & Complete Payment
       </h2>
 
       {#if form?.message}
@@ -151,16 +151,16 @@
         <!-- Devices Subtotal -->
         <div class="flex items-center justify-between text-[#CFF2FF]/90">
           <span>Subtotal (Devices)</span>
-          <span class="font-bold text-white">{formatIdr(data.quote.devicesSubtotalIdr)}</span>
+          <span class="font-bold text-white tabular-nums">{formatIdr(data.quote.devicesSubtotalIdr)}</span>
         </div>
 
         <!-- Technician Installation -->
-        <div class="flex items-center justify-between text-[#CFF2FF]/90">
+        <div class="p-3.5 rounded-[14px] bg-[#4A6FA5]/25 border border-[#CFF2FF]/15 flex items-center justify-between text-[#CFF2FF]/90">
           <div>
-            <div>Technician Installation</div>
+            <div class="font-semibold text-white">Technician Installation</div>
             <div class="text-xs text-[#8CAAB5]">{data.includeInstallation ? `${data.cartItemsCount} Unit${data.cartItemsCount === 1 ? '' : 's'}` : '0 Unit'}</div>
           </div>
-          <span class="font-bold {data.includeInstallation ? 'text-white' : 'text-[#8CAAB5]'}">
+          <span class="font-bold tabular-nums {data.includeInstallation ? 'text-white' : 'text-[#8CAAB5]'}">
             {formatIdr(data.quote.installationFeeIdr)}
           </span>
         </div>
@@ -171,7 +171,7 @@
             <div>Additional Services</div>
             <div class="text-xs text-[#8CAAB5]">{data.includeHub ? 'Gateway Hub Gen 3' : 'None'}</div>
           </div>
-          <span class="font-bold {data.includeHub ? 'text-white' : 'text-[#8CAAB5]'}">
+          <span class="font-bold tabular-nums {data.includeHub ? 'text-white' : 'text-[#8CAAB5]'}">
             {formatIdr(data.quote.addOnsIdr)}
           </span>
         </div>
@@ -181,7 +181,7 @@
       <div class="pt-4 border-t border-[#CFF2FF]/20">
         <div class="flex items-center justify-between font-['Outfit'] mb-6">
           <span class="font-bold text-lg text-white">Total Amount</span>
-          <span class="font-extrabold text-2xl text-[#25ED82]">
+          <span class="font-extrabold text-2xl text-[#25ED82] tabular-nums">
             {formatIdr(data.quote.totalIdr)}
           </span>
         </div>

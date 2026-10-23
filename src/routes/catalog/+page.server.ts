@@ -5,6 +5,7 @@ import { resolveCategoryIdBySlug } from '$lib/shared/schemas';
 
 export const load: PageServerLoad = async ({ url, locals }) => {
   const selectedCategory = url.searchParams.get('category');
+  const initialQuery = url.searchParams.get('q') ?? '';
 
   try {
     const categories = await db.orm.public.Category.orderBy((c) => c.sortOrder.asc()).all();
@@ -61,6 +62,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
       products: mappedProducts,
       categories: mappedCategories,
       selectedCategory,
+      initialQuery,
       user: locals.user,
       dbConnected: true
     };
@@ -70,6 +72,7 @@ export const load: PageServerLoad = async ({ url, locals }) => {
       products: [],
       categories: [],
       selectedCategory,
+      initialQuery,
       user: locals.user,
       dbConnected: false
     };

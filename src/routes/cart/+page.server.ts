@@ -1,7 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
-import { fail } from '@sveltejs/kit';
-import type { CartItemDto } from '$lib/shared/types';
+import { fail, redirect } from '@sveltejs/kit';
+import { loadUserCart } from '$lib/server/cart';
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (!locals.user) {
@@ -12,58 +12,51 @@ export const load: PageServerLoad = async ({ locals }) => {
     };
   }
 
-  const cartRecords = await db.orm.public.CartItem
-    .where({ userId: locals.user.id })
-    .include('product', (p) => p.include('category'))
-    .orderBy((c) => c.addedAt.desc())
-    .all();
-
-  let subtotalIdr = 0;
-  let itemCount = 0;
-
-  const items: CartItemDto[] = [];
-  for (const item of cartRecords) {
-    if (!item.product) continue;
-    const isAvailable = item.product.status === 'ACTIVE';
-    if (isAvailable) {
-      subtotalIdr += item.product.priceIdr * item.quantity;
-      itemCount += item.quantity;
-    }
-
-    items.push({
-      id: item.id,
-      productId: item.productId,
-      quantity: item.quantity,
-      available: isAvailable,
-      product: {
-        id: item.product.id,
-        slug: item.product.slug,
-        name: item.product.name,
-        description: item.product.description,
-        priceIdr: item.product.priceIdr,
-        imageUrl: item.product.imageUrl,
-        kind: item.product.kind as any,
-        status: item.product.status as any,
-        isFeatured: item.product.isFeatured,
-        featuredRank: item.product.featuredRank,
-        category: {
-          id: item.product.category?.id ?? '',
-          slug: item.product.category?.slug ?? '',
-          name: item.product.category?.name ?? '',
-          sortOrder: item.product.category?.sortOrder ?? 0
-        }
-      }
-    });
-  }
-
+  const cart = await loadUserCart(locals.user.id);
   return {
-    items,
-    subtotalIdr,
-    itemCount
+    items: cart.items,
+    subtotalIdr: cart.subtotalIdr,
+    itemCount: cart.itemCount
   };
 };
 
 export const actions: Actions = {
+  proceedCheckout: async ({ request, locals, cookies }) => {
+    if (!locals.user) {
+      throw redirect(303, '/login?next=/cart');
+    }
+
+    const formData = await request.formData();
+    const rawIds = formData.getAll('selectedItemId').map(String).filter(Boolean);
+
+    if (rawIds.length === 0) {
+      return fail(400, { message: 'Please select at least one item to check out.' });
+    }
+
+    // Verify selected items belong to user and are active
+    const userItems = await db.orm.public.CartItem
+      .where({ userId: locals.user.id })
+      .include('product')
+      .all();
+
+    const validIds = userItems
+      .filter((item) => rawIds.includes(item.id) && item.product && item.product.status === 'ACTIVE')
+      .map((item) => item.id);
+
+    if (validIds.length === 0) {
+      return fail(400, { message: 'None of the selected items are available for checkout.' });
+    }
+
+    cookies.set('hm_checkout_items', JSON.stringify(validIds), {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24
+    });
+
+    throw redirect(303, '/checkout/location');
+  },
+
   remove: async ({ request, locals }) => {
     if (!locals.user) {
       return fail(401, { message: 'Unauthorized' });

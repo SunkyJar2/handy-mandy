@@ -4,7 +4,7 @@
   import CheckoutStepper from '$lib/components/CheckoutStepper.svelte';
   import { formatIdr, INSTALL_FEE_PER_UNIT_IDR, HUB_PRICE_IDR } from '$lib/shared/pricing';
   import { getTomorrowLocalDate, getMaxBookingLocalDate } from '$lib/shared/checkout';
-  import { ArrowRight, Calendar as CalendarIcon, FileText } from 'lucide-svelte';
+  import { ArrowRight, Calendar as CalendarIcon, FileText, Wrench, Radio } from 'lucide-svelte';
 
   interface Props {
     data: PageData;
@@ -54,7 +54,7 @@
       {/if}
 
       <h2 class="font-['Outfit'] font-bold text-2xl sm:text-[32px] text-[#CFF2FF] mb-2">
-        1. Configure Installation & Add-ons
+        2. Configure Installation & Add-ons
       </h2>
 
       <!-- Option Card 1: Professional Technician Installation (Figma 95:81 / 95:93) -->
@@ -66,14 +66,14 @@
       >
         <div class="flex items-start justify-between gap-4">
           <div class="space-y-2 max-w-xl">
-            <h3 class="font-['Outfit'] font-bold text-xl sm:text-2xl text-[#CFF2FF] flex items-center gap-2">
-              <span>🛠️</span>
+            <h3 class="font-['Outfit'] font-bold text-xl sm:text-2xl text-[#CFF2FF] flex items-center gap-2.5">
+              <Wrench class="w-5 h-5 text-[#4A6FA5]" />
               <span>Professional Technician Installation</span>
             </h3>
             <p class="font-['Outfit'] text-sm sm:text-base text-[#CFF2FF]/70 leading-relaxed">
               Includes full device unboxing, physical mounting, power/wiring setup, WiFi configuration, smart app pairing, and 30-day labor warranty.
             </p>
-            <div class="font-['Outfit'] font-semibold text-sm sm:text-base text-[#25ED82] pt-1">
+            <div class="font-['Outfit'] font-semibold text-sm sm:text-base text-[#25ED82] pt-1 tabular-nums">
               + Rp 150.000 per device unit ({data.cartItemsCount} {data.cartItemsCount === 1 ? 'unit' : 'units'} = {formatIdr(data.cartItemsCount * 150000)})
             </div>
           </div>
@@ -108,13 +108,13 @@
         <div class="flex items-start justify-between gap-4">
           <div class="space-y-2 max-w-xl">
             <h3 class="font-['Outfit'] font-bold text-xl sm:text-2xl text-[#CFF2FF] flex items-center gap-2">
-              <span>📡</span>
+              <Radio class="w-5 h-5 text-[#4A6FA5]" />
               <span>Zigbee Multi-Protocol Gateway Hub Gen 3</span>
             </h3>
             <p class="font-['Outfit'] text-sm sm:text-base text-[#CFF2FF]/70 leading-relaxed">
               Enables local automation, ultra-fast response times, and connects all Zigbee 3.0 / Bluetooth mesh sensors to your home network.
             </p>
-            <div class="font-['Outfit'] font-semibold text-sm sm:text-base text-[#25ED82] pt-1">
+            <div class="font-['Outfit'] font-semibold text-sm sm:text-base text-[#25ED82] pt-1 tabular-nums">
               + Rp 450.000 (1 Unit Hardware + Lifetime Local Gateway)
             </div>
           </div>
@@ -202,13 +202,13 @@
         <!-- Devices line -->
         <div class="flex items-center justify-between text-[#CFF2FF]/90">
           <span>Devices ({data.cartItemsCount} item{data.cartItemsCount === 1 ? '' : 's'})</span>
-          <span class="font-bold text-white">{formatIdr(devicesSubtotalIdr)}</span>
+          <span class="font-bold text-white tabular-nums">{formatIdr(devicesSubtotalIdr)}</span>
         </div>
 
         <!-- Installation line -->
         <div class="flex items-center justify-between text-[#CFF2FF]/90">
           <span>Professional Installation</span>
-          <span class="font-bold {includeInstallation ? 'text-white' : 'text-[#8CAAB5]'}">
+          <span class="font-bold tabular-nums {includeInstallation ? 'text-white' : 'text-[#8CAAB5]'}">
             {includeInstallation ? formatIdr(installationFeeIdr) : 'None'}
           </span>
         </div>
@@ -216,7 +216,7 @@
         <!-- Hub line -->
         <div class="flex items-center justify-between text-[#CFF2FF]/90">
           <span>Zigbee Gateway Hub</span>
-          <span class="font-bold {includeHub ? 'text-white' : 'text-[#8CAAB5]'}">
+          <span class="font-bold tabular-nums {includeHub ? 'text-white' : 'text-[#8CAAB5]'}">
             {includeHub ? formatIdr(addOnsIdr) : 'None'}
           </span>
         </div>
@@ -226,7 +226,7 @@
       <div class="pt-4 border-t border-[#CFF2FF]/20">
         <div class="flex items-center justify-between font-['Outfit'] mb-6">
           <span class="font-bold text-lg text-white">Total Booking Price</span>
-          <span class="font-extrabold text-2xl text-[#25ED82]">
+          <span class="font-extrabold text-2xl text-[#25ED82] tabular-nums">
             {formatIdr(totalIdr)}
           </span>
         </div>

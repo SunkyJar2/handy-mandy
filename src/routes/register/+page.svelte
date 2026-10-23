@@ -48,9 +48,9 @@
   </header>
 
   <!-- Register Card (Figma frame 37:7 / 93:514: 500x650) -->
-  <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-6">
+  <main class="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-6">
     <div
-      class="w-full max-w-[500px] min-h-[640px] rounded-2xl p-6 sm:p-10 flex flex-col justify-between border border-[#4A6FA5]/40 shadow-2xl backdrop-blur-md"
+      class="w-full max-w-[500px] rounded-2xl p-6 sm:p-10 flex flex-col justify-between border border-[#4A6FA5]/40 shadow-2xl backdrop-blur-md"
       style="background: rgba(26, 53, 81, 0.82);"
     >
       <div>
@@ -176,17 +176,17 @@
           </button>
         </form>
       </div>
+    </div>
 
-      <!-- Cross link -->
-      <div class="mt-6 text-center text-sm font-['Outfit'] text-[#CFF2FF]/80">
-        Already have an account?
-        <a
-          href={data.next && data.next !== '/' ? `/login?next=${encodeURIComponent(data.next)}` : '/login'}
-          class="font-semibold text-white underline ml-1 hover:text-[#CFF2FF]"
-        >
-          Sign in
-        </a>
-      </div>
+    <!-- Cross link below card matching Figma #37:7 -->
+    <div class="mt-5 text-center text-sm font-['Outfit'] text-[#CFF2FF]/80">
+      Already have an account?
+      <a
+        href={data.next && data.next !== '/' ? `/login?next=${encodeURIComponent(data.next)}` : '/login'}
+        class="font-semibold text-white underline ml-1 hover:text-[#CFF2FF]"
+      >
+        Sign in
+      </a>
     </div>
   </main>
 

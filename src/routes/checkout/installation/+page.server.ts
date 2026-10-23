@@ -5,7 +5,7 @@ import { toIsoDateTime } from '$lib/server/date';
 import { calculateQuote } from '$lib/shared/pricing';
 import { parseCheckoutOptionsCookie } from '$lib/shared/checkout';
 import { checkoutOptionsSchema } from '$lib/shared/schemas';
-import { validateActiveCartItems } from '$lib/server/guards';
+import { parseSelectedCartItemIds, filterCheckoutCartItems } from '$lib/shared/cart-selection';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
   if (!locals.user) {
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     throw redirect(303, '/checkout/location');
   }
 
-  const [cartItems, address] = await Promise.all([
+  const [rawCartItems, address] = await Promise.all([
     db.orm.public.CartItem
       .where({ userId: locals.user.id })
       .include('product')
@@ -27,7 +27,10 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
       .first()
   ]);
 
-  if (!validateActiveCartItems(cartItems)) {
+  const selectedIds = parseSelectedCartItemIds(cookies.get('hm_checkout_items'));
+  const cartItems = filterCheckoutCartItems(rawCartItems, selectedIds);
+
+  if (cartItems.length === 0) {
     throw redirect(303, '/cart');
   }
   if (!address) {
@@ -45,7 +48,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 
   const quote = calculateQuote({
     items: cartItems.map((ci) => ({
-      priceIdr: ci.product.priceIdr,
+      priceIdr: ci.product!.priceIdr,
       quantity: ci.quantity
     })),
     includeInstallation,
@@ -56,6 +59,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     address: {
       id: address.id,
       userId: address.userId,
+      label: address.label ?? null,
       province: address.province,
       city: address.city,
       district: address.district,

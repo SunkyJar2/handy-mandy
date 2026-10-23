@@ -9,6 +9,7 @@
 
   let { isOpen, onClose, onSuccess }: Props = $props();
 
+  let label = $state('');
   let province = $state('Jawa Timur');
   let city = $state('Surabaya');
   let district = $state('');
@@ -28,6 +29,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          label: label.trim() || null,
           province,
           city,
           district,
@@ -41,6 +43,7 @@
       if (!res.ok) {
         errorMessage = data.error?.message || 'Failed to save address.';
       } else {
+        label = '';
         district = '';
         addressLine = '';
         postalCode = '';
@@ -95,6 +98,19 @@
       {/if}
 
       <form onsubmit={handleSubmit} class="space-y-4">
+        <div>
+          <label for="addr-label" class="block font-['Outfit'] text-xs font-semibold uppercase tracking-wider text-[#8CAAB5] mb-1">
+            Address Label (optional, e.g. Home, Office, School)
+          </label>
+          <input
+            id="addr-label"
+            bind:value={label}
+            type="text"
+            placeholder="Home"
+            class="w-full h-10 px-3 rounded-lg bg-[#071824]/80 border border-[#CFF2FF]/30 text-white text-sm focus:outline-none focus:border-[#CFF2FF]"
+          />
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label for="addr-prov" class="block font-['Outfit'] text-xs font-semibold uppercase tracking-wider text-[#8CAAB5] mb-1">

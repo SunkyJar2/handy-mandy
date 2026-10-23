@@ -4,15 +4,27 @@
   import TopNav from '$lib/components/TopNav.svelte';
   import Footer from '$lib/components/Footer.svelte';
   import ToastContainer from '$lib/components/ToastContainer.svelte';
+  import MenuDrawer from '$lib/components/MenuDrawer.svelte';
+  import CartPopover from '$lib/components/CartPopover.svelte';
+  import CartFab from '$lib/components/CartFab.svelte';
   import { page } from '$app/state';
   import { browser } from '$app/env';
   import { invalidateAll } from '$app/navigation';
   import { toast } from '$lib/stores/toast.svelte';
+  import { cartStore } from '$lib/stores/cart.svelte';
 
   let { data, children }: LayoutProps = $props();
 
-  // Hide TopNav and Footer on auth pages to match Figma frames 37:7 and 47:58
+  let isDrawerOpen = $state(false);
+
+  // Hide TopNav, Footer, FAB on auth pages
   let isAuthPage = $derived(page.url.pathname === '/login' || page.url.pathname === '/register');
+  let isHomeOrCatalog = $derived(page.url.pathname === '/' || page.url.pathname === '/catalog');
+
+  // Hydrate cartStore whenever data changes
+  $effect(() => {
+    cartStore.hydrate(data.cart);
+  });
 
   $effect(() => {
     if (browser && data.user) {
@@ -22,25 +34,7 @@
         try {
           const pending = JSON.parse(pendingRaw);
           if (pending?.id) {
-            fetch('/api/v1/cart', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ productId: pending.id })
-            })
-              .then(async (res) => {
-                const resData = await res.json().catch(() => ({}));
-                if (res.ok) {
-                  toast.show(`Added ${pending.name || 'item'} to cart!`, 'success');
-                  await invalidateAll();
-                } else if (res.status === 409) {
-                  toast.show(resData.error?.message || 'Already in your cart.', 'info');
-                } else {
-                  toast.show(resData.error?.message || 'Could not add item to cart.', 'error');
-                }
-              })
-              .catch(() => {
-                toast.show('Network error adding pending item to cart.', 'error');
-              });
+            cartStore.addProduct(pending, true);
           }
         } catch {}
       }
@@ -61,7 +55,11 @@
 
 <div class="min-h-screen flex flex-col justify-between">
   {#if !isAuthPage}
-    <TopNav user={data.user} cartCount={data.cartCount} />
+    <TopNav
+      user={data.user}
+      cartCount={cartStore.itemCount}
+      onOpenDrawer={() => (isDrawerOpen = true)}
+    />
   {/if}
 
   <main id="main-content" tabindex="-1" class="flex-1 w-full">
@@ -74,3 +72,16 @@
 
   <ToastContainer />
 </div>
+
+<!-- Overlays mounted outside <header> to escape backdrop-filter containing block -->
+<MenuDrawer
+  isOpen={isDrawerOpen}
+  user={data.user}
+  onClose={() => (isDrawerOpen = false)}
+/>
+
+<CartPopover />
+
+{#if !isAuthPage && isHomeOrCatalog}
+  <CartFab />
+{/if}
